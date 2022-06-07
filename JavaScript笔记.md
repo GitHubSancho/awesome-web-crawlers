@@ -21,33 +21,206 @@
 ### 原始值和引用值
   - 区别：原始值就是六种数据类型的的简单数据，按值访问，保存到栈；引用值是多个值构成的对象（地址值），按引用访问，保存到堆
   - 动态属性：引用值可以随时添加、修改和删除其属性和方法；原始值不能有属性
+    ```javascript
+    let name1 = "Sancho"
+    let name2 = new String("Matt")
+    name1.age = 22
+    name2.age = 23
+    console.log(name1.age)//undefined
+    console.log(name2.age)//23
+    console.log(typeof name1)//string
+    console.log(typeof name2)//object
+    ```
   - 复制值：通过变量把原始值赋值到另一个变量时，原始值复制到新变量的位置（互不干扰）；引用值赋值实则是复制指针指向同一个对象（共享）
+    ```javascript
+    let obj1 = new Object()
+    let obj2 = obj1
+    obj1.name = "Sancho"
+    console.log(obg2.name)//"Sancho"
+    ```
   - 传递参数：所有函数的参数都是按值传递，值被复制到局部变量（arguments对象槽位,与变量赋值类似）；原始值不会改变，引用值会被共享
-  ```javascript
-  function setName(obj){
-    obj.name = "Sancho"
-    obj = new Object()//重写
-    obj.name = "Greg"
-  }
-  
-  let person = new Object()
-  setName(person)
-  console.log(person.name)//"Sancho"
-  ```
+      ```javascript
+    //传递原始值
+    function addTen(num){
+        num += 10
+        return num
+    }
+    let count = 20
+    let result = addTen(count)
+    console.log(count)//20,没有影响外部变量
+    console.log(result)//30
+    
+    //传递引用值
+    function setName(obj){
+        obj.name = "Sancho"
+    }
+    let person = new Object()
+    setName(person)
+    console.log(person.name)//"Sancho"
+    
+    //证明函数参数是按值传递
+    function setName(obj){
+        obj.name = "Sancho"
+        obj = new Object()//重写改变指针
+        obj.name = "Greg"
+    }
+    let person = new Object()
+    setName(person)
+    console.log(person.name)//"Sancho"
+    ```
   - typeof操作符适合判断原始类型（String、Number、Boolean、Undefined）；判断null时返回object；
-  - instanceof操作符判断对象类型（涉及对象原型链）；任何引用值和Object构造函数都会返回true，原始值则会返回false。`[1,2,3] instanceof Array//true`
+    ```javascript
+    let s = "Sancho"
+    let u
+    let n = null
+    let o = new Object()
+    console.log(s)//string
+    console.log(u)//undefined
+    console.log(n)//object
+    console.log(o)//object
+    ```
+  - instanceof操作符判断对象类型（涉及对象原型链）；任何引用值和Object构造函数都会返回true，原始值则会返回false。
+    ```javascript
+    [1,2,3] instanceof Array//true
+    ```
 ### 执行上下文（作用域）
   - 每个变量或函数都有上下文；变量或函数的上下文决定了它们可以访问哪些数据、行为和生命周期；
-  - 执行上下文分全局上下文、函数上下文、块级上下文
-  - 代码执行流每进入一个新上下文都会创建一个作用域链，用于搜索变量和函数
-  - 函数或块的局部上下文不仅可以访问自己作用域内和父级的变量
-  - 全局上下文只能访问全局上下文中的变量和函数
+  - 代码执行流每进入一个新上下文都会创建一个作用域链，用于搜索变量和函数（沿作用域链前端开始，逐级往后直到找到标识符或没有找到返回undefined）
+    ```javascript
+    var color = "blue"
+    function changeColor(){
+        if (color === "blue"){
+            color = "red"
+        } else{
+            color = "blue;"
+        }
+    }
+    changeColor()//"red"
+
+    var color2 = "blue"
+    function getColor(){
+        let color = "red"
+        {
+            let color = "green
+            return color
+        }
+    }
+    console.log(getColor())//green
+    ```
+  - 全局上下文只能访问全局上下文中的变量和函数，函数或块的局部上下文不仅可以访问自己作用域内和父级的变量
+    ```javascript
+    var color = "blue"
+    
+    function changeColor(){
+        //可以访问color、anotherColor,不能访问tempColor
+        let anotherColor = "red"
+    
+        function swapColors(){
+            //可以访问color、anotherColor、tempColor
+            let tempColor = anotherColor
+            anotherColor = color
+            color = tempColor
+        }
+    }
+    
+    //只能访问color
+    changeColor()
+    ```
   - 变量的执行上下文用于确定什么时候释放内存
+    ```javascript
+    //使用var声明变量时，变量会被自动添加到最接近的上下文
+    functiion add(num1,num2){
+        var sum1 = num1 + num2
+        sum2 = num1 + num2//没有使用var定义
+    }
+    
+    add(10,20)
+    console.log(sum1)//报错，sum不在全局变量
+    console.log(sum2)//30,sum2被添加到全局上下文
+    
+    //变量提升
+    name = "Sancho"
+    var name//等价于var name = "Sancho"
+    
+    //变量在声明前使用返回undefined
+    console.log(name)//undefined
+    var name = "Sancho"
+    
+    //函数提升
+    function fn2(){
+        var name
+        name = "Sancho"
+    }//等价于function fn1(){var name = "Sancho"}
+    ```
+  - 执行上下文分全局上下文、函数上下文、块级上下文(由花括号{}界定)
+    ```javascript
+    //let声明变量的作用域包括if块、while块、function块及其它单独块
+    if(ture){
+        let a
+    }
+    console.log(a)//a没有定义
+    
+    //重复var声明会被忽略，重复let声明会报错
+    var a
+    var a
+    {
+        let b
+        let b//SyntaxError:标识符b已经声明过了
+    }
+    
+    //const声明常量上下文也由花括号界定
+    const a//SyntaxError：常量声明没有初始化
+    const b = 1
+    const b = 2//报错：给常量赋值
+    {
+        const c = 3
+    }
+    console.log(c)//报错，不存在于全局上下文
+    
+    const o1 = {}
+    o1.name = "Sancho"//对象属性赋值不受影响
+    const o2 = Object.freeze({})//让整个对象不能修改，不报错，但会静默失败
+    o2.name = "Sancho"
+    console.log(o3.name)//undefined
+    ```
 ### 垃圾回收
   - 离开作用域的值被自动标记为可回收
   - 主流的垃圾回收算法是标记清理（不用的值标记之后清理内存）
   - 少用的是引用计数策略，记录值被引用多少次，荣一直在循环引用时出现问题
   - 解除变量引用（赋值null）可以消除循环引用，帮助垃圾回收
+  - 内存管理：
+    - const和let替代var；
+    - 隐藏类（V8自动跟踪、优化相同属性的多个实例共享一个构造函数和原型）和不使用删除（delete）操作隐藏类；
+    - 使用变量声明前加定义和严格使用闭包防止内存泄露
+    - 使用对象池，避免动态分配（引擎会删除大小为100的数组创建更大的数组，可以先定义好需要大小的数组），减少对象更替引起的垃圾回收程序敏感
+    ```javascript
+    //伪实现对象池
+    function addVector(a,b,resultant){
+        resultant.x = a.x + b.x
+        resultant.y = a.y + b.y
+        return resultant
+    }
+    
+    let v1 = vectorPool.allocate()//假设vectorPool是已有的对象池
+    let v2 = vectorPool.allocate()
+    let v3 = vectorPool.allocate()
+    v1.x = 10
+    v1.y = 5
+    v2.x = -3
+    v2.y = -6
+    
+    addVector(v1,v2,v3)
+    console.log([v3.x,v3.y])//[7,-1]
+    
+    vectorPool.free(v1)
+    vectorPool.free(v2)
+    vectorPool.free(v3)
+    
+    //如果对象有属性引用了其它对象，则这里也需要把属性设置为null
+    v1 = null
+    v2 = null
+    v3 = null
+    ```
 ----
 ## 基本引用类型
 ### 内置基本对象
