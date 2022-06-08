@@ -190,7 +190,7 @@
   - 解除变量引用（赋值null）可以消除循环引用，帮助垃圾回收
   - 内存管理：
     - const和let替代var；
-    - 隐藏类（V8自动跟踪、优化相同属性的多个实例共享一个构造函数和原型）和不使用删除（delete）操作隐藏类；
+    - 隐藏类（V8引擎自动跟踪、优化相同属性的多个实例共享一个构造函数和原型）和不使用删除（delete）操作隐藏类；
     - 使用变量声明前加定义和严格使用闭包防止内存泄露
     - 使用对象池，避免动态分配（引擎会删除大小为100的数组创建更大的数组，可以先定义好需要大小的数组），减少对象更替引起的垃圾回收程序敏感
     ```javascript
@@ -225,16 +225,87 @@
 ## 基本引用类型
 ### 内置基本对象
   - 内置的引用类型可创建特定类型对象，与其他面向对象编程语言类似但实现不同
+    ```javascript
+    //创建对象
+    let now = new Date()
+    ```
   - Date类型提供日期和时间的信息（包括日期、时间相关计算）
+    ```javascript
+    //字符串转日期时间型
+    let someDate = new Date(Date.parse("May 23, 2019"))
+    let someDate = new Date(May 23, 2019")//等价于上面代码，自动调用parse方法
+    
+    //UTC方法返回毫秒数
+    let y2k = new Date(Date.UTC(2000,0))//默认1月1日
+    let allFives = new Date(Date.UTC(2000,1,2,3,4,5))//Wed Feb 02 2000 11:04:05 GMT+0800 (中国标准时间);月数以零开始，采用24小时制以零开始,中国时区+8小时
+    let allFives = new Date(2000,1,2,3,4,5)//隐式调用
+    
+    //返回执行时间和毫秒速
+    let start = Date.now()
+    ｛
+        //doSometing()
+    ｝
+    let stop = Date.now()
+    result = stop - start
+    
+    ```
   - RegExp类型是正则表达式接口，提供基础和部分高级正则表达式功能
+    ```javascript
+    //创建正则表达式
+    let pattern = /表达式/匹配模式 //匹配模式有:g全局，i忽略大小写，m多行模式，y粘附模式，u启用Unicode匹配，s匹配任何字符
+    let parrern = /Sancho/i 
+    let pattern = new RegExp("Sancho","i") //构建函数方式创建
+    
+    //搜寻文本，返回数组
+    let text = "mom and dad and baby"
+    let pattern = /baby/g
+    let matches = pattern.exec(text) //['baby', index: 16, input: 'mom and dad and baby', groups: undefined]
+    
+    ```
 ### 原始值包装类型
   - JS中函数是Function类型的实例（函数也是对象，所以函数有方法）
   - 原始值有包装类存在，原始值可以被当成对象使用（Boolean、Number、String）
   - 每种包装类型都映射到同名原始类型
   - 以读模式访问原始值时，后台会实例化一个原始值包装类型的对象，借助这个对象可以操作相应数据
   - 涉及原始值的语句执行完毕后，包装对象就会被销毁
+    ```javascript
+    //以读模式访问，调用实例上的特定方法
+    let s1 = "Sancho"
+    let s2 = s1.substring(2)
+    //上面代码实则执行如下代码
+    let s1 = new String("Sancho")
+    let s2 = s1.substring(2)
+    s1 = null
+    
+    //不能给原始值添加属性和方法
+    let s1 = "Sancho"
+    s1.color = "red"
+    console.log(s1.color)//undefined
+    ```
 ### 单例内置对象
   - 代码执行时全局上下文有Global和Math对象，Global一般无法直接访问（实现为window），所有全局变量和函数都是Global对象的属性；Math对象包含辅助完成复杂计算的属性和方法
+    ```javascript
+    //URL编码、解码方法
+    let uri = "http://www.wrox.com/illegal value.js#start"
+    console.log(encodeURI(uri)) //http://www.wrox.com/illegal%20value.js#start
+    console.log(encodeURIComponent(uri)) //http%3A%2F%2Fwww.wrox.com%2Fillegal%20value.js%23start
+    let uri2 = "http%3A%2F%2Fwww.wrox.com%2Fillegal%20value.js%23start"
+    console.log(decodeURI(uri2)) //http%3A%2F%2Fwww.wrox.com%2Fillegal value.js%23start
+    console.log(decodeURIComponent(uri2)) //http://www.wrox.com/illegal value.js#start
+    
+    //执行字符串
+    eval("console.log('hello world')") //通过eval执行字符串内的代码
+    
+    //window对象
+    var color = "red"
+    console.log(window.color)//"red"
+    
+    //Math对象
+    let array = [1,2,3,4,5]
+    console.log(Math.max(...array)) //5
+    console.log(Math.min(...array)) //1
+    
+    ```
 ----
 ## 集合引用类型（与上重合）
 ### 内置集合引用对象
