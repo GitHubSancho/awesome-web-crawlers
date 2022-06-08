@@ -308,11 +308,79 @@
     ```
 ----
 ## 集合引用类型（与上重合）
-### 内置集合引用对象
+### 自定义引用对象
   - Object类型是基础类型，所有引用类型都继承了它的基本行为
+    ```javascript
+    //构造函数创建
+    let person = new Object()
+    person.name = "Sancho"
+    person.age = 23
+    
+    //字面量创建(推荐)
+    let person = {
+        "name":"Sancho",
+        "age":23,
+        5,true //属性名可以是字符串或数值，最后一个属性后不能加逗号
+    }
+    
+    //调用属性
+    console.log(person.name) //"Sancho"
+    console.log(person["name"]) //"Sancho"
+    let propertyName = "Name"
+    console.log(person[propertyName]) //"Sancho",以变量方式调用
+    ```
 ### 数组、定型数组
   - Array类型表示一组有序的值，并提供操作和转换值的能力
+    ```javascript
+    //创建数组
+    let colors1 = new Array()
+    let colors2 = new Array(20) //创建length为20的数组
+    let colors3 = new Array("red","blue","green") //传入数据
+    let colors4 = [] //字面量表示法
+    let colors5 = [1,2,]
+    
+    //拆分数据
+    console.log(Array.from("Sancho")) //拆分元素；(6字符['S', 'a', 'n', 'c', 'h', 'o']
+    
+    //迭代
+    const iter = {
+        *[Symbol.iterator](){
+            yield 1
+            yield 2
+            yield 3
+            yield 4
+        }
+    }
+    console.log(Array.from(iter)) //(4) [1, 2, 3, 4]
+    
+    //合并数据
+    console.log(Array.of(1,2,3,4)) //(4) [1, 2, 3, 4]
+    
+    //数组索引
+    let colors = new Array("red","blue","green")
+    console.log(colors[0]) //"red"
+    console.log(colors.length) //3
+    colors.length = 2 //修改长度
+    console.log(colors[2]) //undefined
+    colors.length = 4 //实则可任意修改，未填充为undefined
+    console.log(colors[3]) //undefined
+    colors[colors.length] = "black" //添加操作
+    colors[-1] = "yellow" //倒叙索引
+    
+    //[!迭代器方法、复制和填充方法、转换方法、栈方法、队列方法、排序方法、操作方法、搜索和位置方法、迭代方法、归并方法]
+    ```
   - 定型数组包含一套不同的引用类型，用于管理数值在内存中的类型
+    ```javascript
+    //预分配内存
+    const buf = new ArrayBuffer(16) //内存中分配16字节，不可修改
+    console.log(buf.byteLength) //16
+    const buf2 = buf.slice(4,8) //截取复制
+    console.log(buf2.byteLength) //8
+    
+    //DateView
+    const buf = new ArrayBuffer(16)
+    
+    ```
 ### Map、WeakMap、set、WeakSet
   - Map、WeakMap、Set、WeakSet是ECMAScript新增的引用类型，为组织应用程序数据和简化内存管理提供了新能力
 ----
