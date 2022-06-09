@@ -377,9 +377,29 @@
     const buf2 = buf.slice(4,8) //截取复制
     console.log(buf2.byteLength) //8
     
-    //DateView
+    //DateView创建
     const buf = new ArrayBuffer(16)
+    const fullDataView = new DataView(buf)
+    console.log(fullDataview.byteOffset) //0
+    console.log(fullDataview.byteLength) //16
+    console.log(fullDataview.buffer === buf) //ture
     
+    //DataView构造函数接收一个可选的字节偏移量和字节长度
+    //  byteOffset=0 表示视图从缓冲起点开始
+    //  byteLength=8 限制视图为前8个字节,不指定默认为剩余缓冲
+    const firstHalfDataView = new DataView(buf, 0, 8)
+    console.log(firstDataview.byteOffset) //0
+    console.log(firstDataview.byteLength) //8
+    console.log(firstDataview.buffer === buf) //ture
+    
+    //DataView读写
+    const buf = new ArrayBuffer(2)
+    const view = new DataView(buf)
+    console.log(view.getInt(0)) //0；检查第一个字符
+    console.log(view.getInt16(0)) //0；检查整个缓冲
+    view.setUint8(0,255) //255的二进制表示是8个1，即将整个缓冲都设置为1
+    
+    //[!字节序、边界情形、定型数组（方法、合并、复制和修改定型数组、下溢和上溢）]
     ```
 ### Map、WeakMap、set、WeakSet
   - Map、WeakMap、Set、WeakSet是ECMAScript新增的引用类型，为组织应用程序数据和简化内存管理提供了新能力
