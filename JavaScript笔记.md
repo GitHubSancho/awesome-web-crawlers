@@ -445,12 +445,69 @@
 ## 迭代器、生成器
 ### 迭代
   - 迭代器是一个可以由任意对象实现的接口，支持连续获取对象产出的每一个值。任何实现Iterable接口的对象都有一个Symol.iterator属性，这个属性引用默认迭代器。默认迭代器就像迭代器工厂，也就是一个函数，调用之后会产生一个实现Iterator接口的对象
+    ```javascript
+    //计数迭代数组（遍历）
+    let collection = ["foo","bar","baz"]
+    for (let i=0; i<collection.length; ++i){
+        console.log(collection[index])
+    }
+    //方法迭代数组
+    collecttion.forEach((item) => console.log(item))
+    ```
 ### 迭代器模式
   - 迭代器需要连续调用next()方法才能连续取得值（for-of循环也可以），这个方法返回一个IteratorObject。这个对象包含一个done属性和一个value属性。
     - done属性是一个布尔值，表示是否还有更多值访问
     - value属性包含迭代器返回的当前值
+  ```javascript
+  //检查类型是否实现迭代器工厂函数
+  let arr = ['a','b','c']
+  console.log(arr[Symbol.iterator]) //ƒ values() { [native code] }
+  //调用迭代器工厂函数生成迭代器
+  let iter = arr[Symbol.iterator]()
+  console.log(iter) //Array Iterator {}
+  //执行迭代器
+  console.log(iter.next()) //{value: 'a', done: false}
+  console.log(iter.next()) //{value: 'b', done: false}
+  console.log(iter.next()) //{value: 'c', done: false}
+  console.log(iter.next()) //{value: undefined, done: true}
+  ```
 ### 生成器
   - 生成器是一种特殊的函数，调用之后会返回一个生成器对象。生成器对象实现了Iterable接口，因此可用在任何消费可迭代对象的地方。生成器支持yield关键字，能够暂停执行生成器函数，还可通过next()方法接收输入和产生输出，加上星号之后可以将跟在它后面的可迭代对象序列化一连串值
+    ```javascript
+    //生成器函数声明
+    function* generatorFnA(){}
+    //生成器函数表达式
+    let generatorFnB = function*(){}
+    
+    //开始或恢复执行
+    let generatorFn = function*(){return 'foo'}
+    const g = generatorFn()
+    console.log(g) //generatorFnA {<suspended>}
+    console.log(g.next()) //{value: 'foo', done: true}
+    console.log(g === g[Symbol.iterator]()) //ture
+    
+    //中断执行
+    let generatorObj = function*(){
+        yield 'foo'
+        yield 'bar'
+        return 'baz'
+    }
+    const g = generatorObj()
+    console.log(g.next()) //{value: 'foo', done: false}
+    console.log(g.next()) //{value: 'bar', done: false}
+    console.log(g.next()) //{value: 'baz', done: true}
+    console.log(g.next()) //{value: undefined, done: true}
+    
+    //断言增强（一次产出一个值）
+    function* generatorFn(){yield* [1,2,3]}
+    let g = generatorFn()
+    for (const x of g){console.log(x)}
+    //1
+    //2
+    //3
+    
+    //生成器可以用return()停止或throw()方法暂停（抛出错误方式）
+    ```
 ----
 ## 对象、类、面向对象编程
 ### 自定义对象
