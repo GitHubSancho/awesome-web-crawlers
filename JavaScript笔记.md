@@ -403,6 +403,44 @@
     ```
 ### Map、WeakMap、set、WeakSet
   - Map、WeakMap、Set、WeakSet是ECMAScript新增的引用类型，为组织应用程序数据和简化内存管理提供了新能力
+    ```javascript
+    //创建映射
+    const m = new Map()
+    //嵌套数组初始化映射
+    const m1 = new Map([
+        ["key1","val1"],
+        ["key2","val2"],
+        ["key3","val3"]
+    ])
+    
+    //添加映射
+    m.set("firstName","Sancho")
+    console.log(m.has("firstName")) //true
+    console.log(m.get("firstName")) //Sancho
+    console.log(m.size) //1
+    
+    //清除映射
+    m.clear()
+    
+    //迭代器
+    const m1 = new Map([
+        ["key1","val1"],
+        ["key2","val2"],
+        ["key3","val3"]
+    ])
+    console.log(m1.entries === m1[Symbol.iterator]) //true
+    for (let pair of m1.entries()){console.log(pair)}
+    //(2) ['key1', 'val1']
+    //(2) ['key2', 'val2']
+    //(2) ['key3', 'val3']
+    
+    //分别返回键值
+    for (let key of m1.keys()){console.log(key)} //返回所有键
+    for (let key of m1.values()){console.log(key)} //返回所有值
+    
+    //Object和Map：Map内存占用更少；Map插入性能稍快；Object查找速度更快；Map更适合大量删除操作；
+    [!WeakMap、Set、WeakSet]
+    ```
 ----
 ## 迭代器、生成器
 ### 迭代
