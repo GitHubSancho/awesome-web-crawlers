@@ -511,8 +511,69 @@
 ----
 ## 对象、类、面向对象编程
 ### 自定义对象
-  - 工厂模式：简单函数，可创建对象，为其添加属性和方法，返回这个对象
+    ```javascript
+    //创建对象
+    let person = new Object()
+    person.name = "Sancho"
+    //字面量创建
+    let person = {
+        name: "Sancho"
+    }
+    
+    //对象属性
+    //  [[Configurable]]:是否可被delete删除并重新定义
+    //  [[Enumerable]]:是否可被for-in循环返回
+    //  [[writable]]:是否可被修改
+    //  [[value]]:包含的属性值
+    //  [[Get]]:读取时返回的获取函数
+    //  [[Set]]:写入时返回的设置函数
+    
+    //修改属性
+    let person = {}
+    Object.defineProperty(person,"name",{writable: false,value: "Sancho"})
+    console.log(person.name) //Sancho
+    person.name = "Greg"
+    console.log(person.name) //Sancho
+    //修改多个属性用Object.defineProperties(person,{})方法
+    //读取属性使用Object.getOwnPropertyDescriptor(person,"name")方法
+    //返回全部属性使用Object.getOwnPropertyDescriptors(person)方法
+    
+    ```
+  - 工厂模式：简单函数，可创建对象，为其添加属性和方法，返回这个对象(不能标识对象类型)
+    ```javascript
+    function createPerson(name){
+        let o = new Object()
+        o.name = name
+        o.sayNmae = function(){console.log(this.name)}
+    }
+    let p1 = createPerson("Sancho")
+    let p2 = createPerson("Greg")
+    ```
   - 构造函数模式：可自定义引用类型；缺点是成员无法重用（包括函数）
+    ```javascript
+    function Person(name){
+        this.name = name
+        this.sayNmae = function(){console.log(this.name)
+    }
+    let p1 = new Person("Sancho")
+    let p2 = new Person("Greg")
+    p1.sayName() //"Sancho"
+    p2.sayname() //"Greg"
+    //如上构造函数会创建对象时把方法创造一遍增加消耗
+    
+    //方法外置
+    function Person(name){
+        this.name = name
+        this.sayNmae = sayName //只包含函数的指针
+    }
+    function sayName(){console.log(this.name)}
+    
+    let p1 = new Person("Sancho")
+    let p2 = new Person("Greg")
+    p1.sayName() //"Sancho"
+    p2.sayname() //"Greg"
+    //此方法污染了全局作用域命名空间
+    ```
   - 原型模式：成员可以共享；
   - 组合构造函数和原型模式：通过构造函数定义实例属性，通过原型定义共享的属性和方法
   - 盗用构造函数模式（传统继承）：在子类构造函数中调用父类构造函数实现每个实例继承的属性都是私有，只能通过构造函数模式定义（子类不能访问父类原型上的方法）
