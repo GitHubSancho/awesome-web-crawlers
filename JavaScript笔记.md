@@ -574,7 +574,17 @@
     p2.sayname() //"Greg"
     //此方法污染了全局作用域命名空间
     ```
-  - 原型模式：成员可以共享；
+  - 原型模式：成员可以共享；缺点是默认实例取得相同属性值（特别是引用型的属性值）
+    ```javascript
+    //给原型赋值
+    let Person = function(){}
+    Person.prototype.name = "Sancho"
+    Person.prototype.sayname = function(){console.log(this.name)}
+    let p1 =new Person()
+    p1.sayName() //"Sancho"
+    let p2 =new Person()
+    p2.sayName() //"Sancho"
+    ```
   - 组合构造函数和原型模式：通过构造函数定义实例属性，通过原型定义共享的属性和方法
   - 盗用构造函数模式（传统继承）：在子类构造函数中调用父类构造函数实现每个实例继承的属性都是私有，只能通过构造函数模式定义（子类不能访问父类原型上的方法）
   - 组合继承模式（推荐）：通过原型链继承共享的属性和方法，通过盗用构造函数继承实例属性
@@ -583,6 +593,87 @@
   - 寄生组合继承模式（最有效）：用于避免重复调用父类构造函数导致的浪费
 ### 对象创建过程（原型链）、继承
  - JS的继承主要通过原型链实现，原型链涉及吧构造函数的原型赋值为另一个类型的实例（子类可访问父类所有属性和方法）；所有继承的属性和方法都会在对象实例间共享（实例不能私有）
+    ```javascript
+    //原型链结构
+    function Person(){} //声明之后关联原型对象
+    console.log(Person.prototype)
+    //constructor: ƒ Person() 指回与之关联的构造函数
+    //[[Prototype]]: Object 即__proto__,指向原型对象
+    
+    console.log(Person.prototype.__proto__ === Object.prototype) //true
+    console.log(Person.prototype.__proto__.constructor === Object) //true
+    console.log(Person.prototype.__proto__.__proto__ === null) //true;Object的原型是null
+    
+    //实例的隐式原型对象等于其构造函数的显式原型对象
+    let p1 = new Person()
+    console.log(p1.__proto__ === Person.prototype) //ture
+    console.log(p1.__proto__.constructor === Person) //ture
+    let p2 = new Person()
+    console.log(p1.__proto__ === p2.__proto__) //ture,共享同一个原型对象
+    
+    //检查实例的原型链是否包含指定构造函数的原型
+    console.log(p1 instanceof Person) //true
+    console.log(p1 instanceof Object) //true
+    console.log(Person.prototype instanceof Object) //true
+    
+    //检查实例的原型是否是构造函数的原型
+    console.log(Person.prototype.isPrototypeOf(p1)) //true
+    
+    //返回实例的原型
+    console.log(Object.getPrototypeOf(p1) == Person.prototype) //true
+
+    //改变实例的原型（不推荐）
+    let num = {age:23}
+    let person = {name:"Sancho"}
+    Object.setPrototypeOf(person,num)
+    console.log(person.name) //"Sancho"
+    console.log(person.age) //23
+    console.log(Object.getPrototypeOf(person) === num) //true
+    
+    
+    //遮蔽原型
+    function Person(){}
+    Person.prototype.name = "Sancho"
+    let p1 = new Person()
+    let p2 = new Person()
+    p1.name = "Greg"
+    console.log(p1.name) //"Greg"
+    console.log(p1.hasOwnProperty("name")) //ture;来自实例
+    console.log(p2.name) //"Sancho"
+    console.log(p2.hasOwnProperty("name")) //false;来自原型
+    delete p1.name //继续搜索原型
+    console.log("name" in p1) //ture;检查实例或原型链上是否存在属性
+    console.log(p1.name) //"Sancho"
+    console.log(p1.hasOwnProperty("name")) //false;来自原型
+    
+    //枚举对象的属性
+    function Person(){}
+    Person.prototype.name = "Sancho"
+    Person.prototype.age = 23
+    let keys = Object.keys(Person.protoype) //
+    console.log(keys) //"name,age"
+    //Object.getOwnPropertyNames()枚举所有属性
+    //Object.getOwnPropertySymbols()枚举键值对
+    //Object.assign()枚举属性的值
+    
+    //对象迭代
+    const o ={
+        name: "Sancho",
+        age: 23
+    }
+    console.log(Object.values(o)) //["Sancho",23]
+    console.log(Object.entries((o))) //[["name","Sancho"],["age",23]]
+    
+    //恢复constructor属性
+    //在定义prototype属性时为了减少代码可以使用对象字面量方式重写原型
+    //但是constructor属性会指向Object
+    //恢复办法如下
+    function Person(){}
+    Person.prototype = {name:"Sancho",age:23}
+    Object.defineProperty(Person.prototype,"constructor",{enumerable:false,value:Person})
+    
+    //原型对象的方法可修改，但不建议
+    ```
 ### 类
   - ES6新增类基于语法糖，方便定义向后兼容的类，可以继承内置类型和自定义类型；有效使用对象实例、对象原型和对象类
 ## 代理、反射
