@@ -574,7 +574,7 @@
     p2.sayname() //"Greg"
     //此方法污染了全局作用域命名空间
     ```
-  - 原型模式：成员可以共享；缺点是默认实例取得相同属性值（特别是引用型的属性值）
+  - 原型模式：成员可以共享；缺点是默认实例取得相同属性值（特别是引用型的属性值）和不能给构造函数传参
     ```javascript
     //给原型赋值
     let Person = function(){}
@@ -585,12 +585,71 @@
     let p2 =new Person()
     p2.sayName() //"Sancho"
     ```
+  - 盗用构造函数模式（经典继承）：属性可以私有，可以传参；只能通过构造函数模式定义（子类不能访问父类原型上的方法），不能重用方法
+    ```javascript
+    //可通过call()或apply()方法实现继承
+    function SuperType(name){
+        this.name = name
+        this.colors = ["red","blue","green"]
+    }
+    function SuberType(){
+        //继承SuperType
+        SuperType.call(this,"Sancho")
+        this.age = 23
+    }
+    let instance1 = new SubType()
+    console.log(instance1.name) //"Sancho"
+    console.log(instance1.age) //23
+    instance1.colors.push("black")
+    console.log(instance1.colors) //"red,blue,green,black"
+    let instance2 = new SubType()
+    console.log(instance2.colors) //"red,blue,green"
+    ```
+  - 组合继承模式（推荐）：通过原型链继承共享的属性和方法，通过盗用构造函数继承实例属性;可以重用，可以属性私有
+    ```javascript
+    function SuperType(name){
+        this.name = name
+        this.colors = ["red","blue","green"]
+    }
+    SuperType.prototype.sayName = function(){
+        console.log(this.name)
+    }
+    function Subtype(name,age){
+        SuperType.call(this,name)
+        this.age = age
+    }
+    SubType.prototype.sayAge = function(){
+        console.log(this.age)
+    }
+    let instance1 = new SubType("Sancho",23)
+    instance1.colors.push("black")
+    console.log(instance1.colors) //"red,blue,green,black"
+    instance1.sayName() //"Sancho"
+    instance1.sayAge() //29
+    
+    let instance2 = new SubType("Greg",27)
+    console.log(instance2.colors) //"red,blue,green"
+    instance2.sayName() //"Greg"
+    instance2.sayAge() //27
+    ```
   - 组合构造函数和原型模式：通过构造函数定义实例属性，通过原型定义共享的属性和方法
-  - 盗用构造函数模式（传统继承）：在子类构造函数中调用父类构造函数实现每个实例继承的属性都是私有，只能通过构造函数模式定义（子类不能访问父类原型上的方法）
-  - 组合继承模式（推荐）：通过原型链继承共享的属性和方法，通过盗用构造函数继承实例属性
   - 原型式继承模式：无须明确定义构造函数而实现继承，本质上是对给定对象执行浅复制（操作的结果可以在之后再次增强）
   - 寄生式模式：基于一个对象创建一个新对象，然后再增强这个新对象，然后返回新对象；
   - 寄生组合继承模式（最有效）：用于避免重复调用父类构造函数导致的浪费
+    ```javascript
+    function SuperType(name){
+        this.name = name
+        this.colors = ["red","blue","green"]
+    }
+    SuperType.prototype.sayName = function(){console.log(this.name)}
+    function SubType(name,age){
+        SuperType.call(this,name)
+        this.age = age
+    }
+    SubType.prototype = new SuperType()
+    SubType.prototype.constructor = SubType
+    SubType.prototype.sayAge = function(){console.log(this.age)}
+    ```
 ### 对象创建过程（原型链）、继承
  - JS的继承主要通过原型链实现，原型链涉及吧构造函数的原型赋值为另一个类型的实例（子类可访问父类所有属性和方法）；所有继承的属性和方法都会在对象实例间共享（实例不能私有）
     ```javascript
@@ -675,7 +734,7 @@
     //原型对象的方法可修改，但不建议
     ```
 ### 类
-  - ES6新增类基于语法糖，方便定义向后兼容的类，可以继承内置类型和自定义类型；有效使用对象实例、对象原型和对象类
+  - ES6新增类基于语法糖，方便定义向后兼容的类，可以继承内置类型和自定义类型；能有效使用对象实例、对象原型和对象类
 ## 代理、反射
 ### 代理
   - 代理可以定义包含捕获器的处理程序对象，可以蓝爵大部分基本操作和方法，以修改基本操作的行为（遵从捕获器不变式）
