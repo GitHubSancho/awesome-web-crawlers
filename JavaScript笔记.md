@@ -735,6 +735,22 @@
     ```
 ### 类
   - ES6新增类基于语法糖，方便定义向后兼容的类，可以继承内置类型和自定义类型；能有效使用对象实例、对象原型和对象类
+    ```javascript
+    //类定义
+    calss Person {}
+    //类表达式
+    const Animal = class {}
+    
+    //类构造函数
+    class Person {
+        constructor(){
+            console.log("Person ctor")
+        }
+    }
+    let p = new Person() //Person ctor;必须使用new关键字实例化
+    console.log(p) //Person {}；默认返回this对象
+    console.log(typeof Person) //function
+    ```
 ## 代理、反射
 ### 代理
   - 代理可以定义包含捕获器的处理程序对象，可以蓝爵大部分基本操作和方法，以修改基本操作的行为（遵从捕获器不变式）
