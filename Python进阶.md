@@ -193,6 +193,67 @@ my_set = {key for key in my_dict.keys()}
 print(my_set) #{'baidu', 'taobao'}
 ```
 ## set和dict
+### set和dict的继承关系
+- dict属于mapping类型
+```
+from collections.abc import Mapping,MutableMapping
+a = {}
+print(isinstance(a,MutableMapping)) # True
+```
+### dict常见方法
+- .clear()
+- .copy()浅拷贝，copy.deepcopy()深拷贝
+- .fromkeys()将可迭代对象转化为dict
+- .get()取值`dict.get('bobby',{}) # 替换dict['bobby']形式，如果取值为空将返回给定对象`
+- .items()，.keys()
+- .setdefault()向get一样取值，如果不存在则添加
+- .update()拼贴可迭代对象
+### dict子类
+- 不建议继承内置数据结构
+```python
+class Mydict(dict):
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value * 2)
+
+
+my_dict = Mydict(one=1)
+print(my_dict)  # {'one': 1};不会继承父类方法
+my_dict["one"] = 1
+print(my_dict)  # {'one': 2}
+
+
+
+from collections import UserDict
+
+# 如果一定要继承基本数据结构则选择以下方式
+class Mydict2(UserDict): # 改变继承对象
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value * 2)
+
+
+my_dict = Mydict2(one=1)
+print(my_dict)  # {'one': 2}
+
+
+
+from collections import defaultdict
+
+my_dict = defaultdict(dict)
+my_value = my_dict['bobby'] # 没有找到索引值则调用__missing__方法，返回空字典而非报错
+print(my_value) # {}
+```
+### set和frozenset
+- set不可变集合，无序，不重复，使用哈希实现，时间复杂度1
+  - .difference()返回差集
+  - |&-等等集合运算
+- frozenset无法修改
+### dict和set实现原理
+- dict查找性能大于list
+- list数据增大，查找时间也会增大；dict数据查找时间不会因数据量而增大
+- dict和set采用哈希表算法
+- dict内存开销大
+- dict存储顺序和元素添加顺序有关
+- 添加数据有可能改变已有数据的顺序
 ## 对象引用、可变性、垃圾回收
 ## 元类编程
 ## 迭代器生成器
