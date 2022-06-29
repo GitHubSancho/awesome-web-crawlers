@@ -89,6 +89,109 @@ ln -s /usr/local/bin/pip3.x /usr/bin/pip3x
 - 可以将函数变为上下文管理器
     - 导入contextlib；装饰类@contextlib.contextmanager；使用yield关键字分割上下文语句
 ## 自定义序列类
+### 序列类型分类
+- 容器序列：list、tuple、deque
+- 扁平序列：str、bytes、bytearray、array.array
+- 可变序列：list、deque、bytearray、array
+- 不可变序列：str、tuple、bytes
+### 序列的abc继承关系
+- Sequence继承Reversible,Collection两个类，Collection继承了Sized,Iterable,Container三个抽象基类，满足了特性则构成此序列协议
+  - Sized实现了len的魔法函数方法，可计算长度
+  - Iterable实现了iter的魔法函数方法，可实现迭代
+  - Container实现了contains的魔法函数方法，可实现判断
+- MutableSequence继承Sequence类，其添加了setitem和delitem等魔法函数方法，则构成了可变序列协议
+### 序列的+、+=和extend的区别
+- +只能拼贴相同数据类型，+=接受拼贴其它数据类型
+  - +=通过MutableSequence的iadd魔法函数实现，iadd调用extend方法用for循环将值append到值里（理论上可接受所有可迭代类型）
+  - extend方法支持可迭代类型拼贴,append会直接把值传递拼贴不会进入for循环
+```python
+a = [1,2]
+b = a + [3,4] # [1,2,3,4]
+a += (3,4) # [1,2,3,4]
+a.extend([5,6]) # [1,2,3,4,5,6]
+a.append((7,8)) #[1,2,3,4,5,6,(7,8)]
+```
+### 实现可切片的对象
+- 切片格式[start:end:step]
+- start为起始位置默认为0，end截止（不包含）位置，step为步长默认为1
+  - start为0可省略，step为1可省略（也可省略第二个冒号）
+  - step为负整数表示反向切片，此时start应比end值大
+  - 切片开始位置大于列表长度，返回空列表；切片结束位置大于列表长度，则从尾部截断
+- 切片可实现增加、插入、替换、删除元素，返回新片段
+- 函数中重写getitem魔法函数既可以实现函数切片
+```
+import numbers
+
+# 函数切片的实现
+class Group:
+    def __init__(self, staffs, group_name, company_name):
+        self.staffs = staffs
+        self.group_name = group_name
+        self.company_name = company_name
+
+    # def __getitem__(self, item): # 此item接受的Python自动转化后的slice对象
+    #     return self.staffs[item]
+
+    def __getitem__(self, item):
+        cls = type(self)
+        if isinstance(item, slice):
+            return cls(group_name=self.group_name,
+                       company_name=self.company_name,
+                       staffs=self.staffs[item])
+        elif isinstance(item, numbers.Integral):
+            return cls(group_name=self.group_name,
+                       company_name=self.company_name,
+                       staffs=[self.staffs[item]])
+
+
+staffs = ["Sancho", "San", "Cho"]
+group = Group(company_name="com", group_name="user", staffs=staffs)
+sub_group = group[:]  # ['Sancho', 'San', 'Cho']
+sub_group = group[0]  # ['Sancho']
+```
+### bisect管理可排序序列
+- 用来处理和维持已排序的升序序列，二分查找算法
+```
+import bisect
+
+inter_list = []
+bisect.insort(inter_list, 3)
+bisect.insort(inter_list, 2)
+bisect.insort(inter_list, 1)
+print(inter_list)  # [1, 2, 3]
+
+print(bisect.bisect(inter_list, 2))  # 2;在相同元素后插入
+print(bisect.bisect_left(inter_list, 2)) # 1;在相同元素前插入
+```
+### 列表之外的数据类型
+- Python有很多数据类型，在很多应用场景之下会比list高效（如array,deque）
+- array和list区别：array只能存放指定数据类型
+### 列表推导式、生成器表达式、字典推导式、集合推导式
+```
+# 提取出1-10之间的奇数
+odd_list = []
+for i in range(11):
+    if i % 2 == 1:
+        odd_list.append(i)
+print(odd_list)  # [1, 3, 5, 7, 9]
+
+# 列表推导式
+odd_list2 = [i for i in range(11) if i % 2 == 1]
+print(odd_list2)  # [1, 3, 5, 7, 9]
+
+# 列表生成式(逻辑复杂时不建议使用)
+odd_gen = (i for i in range(11) if i % 2 == 1)
+print(list(odd_gen))  # [1, 3, 5, 7, 9]
+
+# 字典推导式
+my_dict = {"baidu": "www.baidu.com", "taobao": "www.taobao.com"}
+reversed_dict = {value: key for key, value in my_dict.items()}
+print(reversed_dict)  # {'www.baidu.com': 'baidu', 'www.taobao.com': 'taobao'}
+
+# 集合推导式
+my_set = {key for key in my_dict.keys()}
+print(my_set) #{'baidu', 'taobao'}
+```
 ## set和dict
 ## 对象引用、可变性、垃圾回收
 ## 元类编程
