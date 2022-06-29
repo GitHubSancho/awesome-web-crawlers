@@ -119,7 +119,7 @@ a.append((7,8)) #[1,2,3,4,5,6,(7,8)]
   - 切片开始位置大于列表长度，返回空列表；切片结束位置大于列表长度，则从尾部截断
 - 切片可实现增加、插入、替换、删除元素，返回新片段
 - 函数中重写getitem魔法函数既可以实现函数切片
-```
+```python
 import numbers
 
 # 函数切片的实现
@@ -151,7 +151,7 @@ sub_group = group[0]  # ['Sancho']
 ```
 ### bisect管理可排序序列
 - 用来处理和维持已排序的升序序列，二分查找算法
-```
+```python
 import bisect
 
 inter_list = []
@@ -167,7 +167,7 @@ print(bisect.bisect_left(inter_list, 2)) # 1;在相同元素前插入
 - Python有很多数据类型，在很多应用场景之下会比list高效（如array,deque）
 - array和list区别：array只能存放指定数据类型
 ### 列表推导式、生成器表达式、字典推导式、集合推导式
-```
+```python
 # 提取出1-10之间的奇数
 odd_list = []
 for i in range(11):
@@ -195,7 +195,7 @@ print(my_set) #{'baidu', 'taobao'}
 ## set和dict
 ### set和dict的继承关系
 - dict属于mapping类型
-```
+```python
 from collections.abc import Mapping,MutableMapping
 a = {}
 print(isinstance(a,MutableMapping)) # True
@@ -255,6 +255,93 @@ print(my_value) # {}
 - dict存储顺序和元素添加顺序有关
 - 添加数据有可能改变已有数据的顺序
 ## 对象引用、可变性、垃圾回收
+### 变量
+- Python变量实质是一个指针
+```python
+a = 1
+b = a
+print(id(a) == id(b)) # True
+```
+### ==和is的区别
+- 当使用==时会进入对象的__eq__()魔法函数里，以此返回值判断相等
+- is判断是否是同一对象
+```python
+a = [1,2]
+b = [1,2]
+print(a is b) # False
+print(a == b) # True
+
+a = 1
+b = 1
+print(a is b) # True;inter机制，将短字符串、短数字等简单数据直接引用不额外创建对象的优化策略
+```
+### del语句和垃圾回收
+- Python中垃圾回收算法是引用计数
+  - 在对象创建时对其计数，当删除时，删除变量并且计数减少，归零后清除
+  - 一般使用del是，其实是调用类的__del__()魔法函数来执行内存清理
+```python
+a = object()
+b = a
+del a
+print(b) # <object object at 0x0000028C24258490>
+print(a) # NameError: name 'a' is not defined
+```
+### 经典错误
+- 传递参数为可变值（默认值可以修改通过__defaults__()魔法函数）
+```python
+def add(a, b):
+    a += b
+    return a
+
+
+a = 1
+b = 2
+c = add(a, b)
+print(a, b, c)  # 1 2 3
+
+a = [1, 2]
+b = [3, 4]
+c = add(a, b)
+print(a, b, c)  # [1, 2, 3, 4] [3, 4] [1, 2, 3, 4]
+
+a = (1, 2)
+b = (3, 4)
+c = add(a, b)
+print(a, b, c)  # [1, 2, 3, 4] [3, 4] [1, 2, 3, 4]
+
+
+class Company:
+    def __init__(self, name, staffs=[]):
+        self.name = name
+        self.staffs = staffs
+
+    def add(self, staff_name):
+        self.staffs.append(staff_name)
+
+    def remove(self, staff_name):
+        self.staffs.remove(staff_name)
+
+
+com1 = Company("com1", ["bobby1", "bobby2"])
+com1.add("bobby3")
+com1.remove("bobby1")
+print(com1.staffs)  # ['bobby2', 'bobby3']
+
+com2 = Company("com2")
+com2.add("bobby")
+print(com2.staffs)  # ['bobby']
+
+com3 = Company("com3")
+com3.add("bobby5")
+print(com2.staffs)  # ['bobby', 'bobby5']
+print(com3.staffs)  # ['bobby', 'bobby5']
+print(com2.staffs is com3.staffs)  #True
+"""
+com2和com3因为默认没有传递staffs参数，则使用默认的[]列表；
+list是可变对象；
+因此com2和com3公用一个对象
+"""
+```
 ## 元类编程
 ## 迭代器生成器
 ## socket编程
