@@ -446,8 +446,245 @@ if __name__ == "__main__":
   - \_\_new\_\_()不返回对象，则不会调用\_\_init\_\_()函数
 - \_\_init\_\_()控制参数，完善对象，在对象生成之后
 ### 自定义元类
-### 元类实现简单的orm
+- type动态创建类
+```python
+def say(self):
+    return "hi hi hi"
+
+
+class BaseClass:
+    def answer(self):
+        return "HI HI HI"
+
+
+if __name__ == "__main__":
+    User = type("User2", (BaseClass, ), {"name": "Sancho", "say": say})
+    user = User()
+    print(user.name)  # Sancho
+    print(user.say())  # hi hi hi
+    print(user.answer())  # HI HI HI
+```
+- 当使用class定义类的时候，首先查找MetaClass，通过MetaClass再创建类
+```python
+class MetaClass(type):
+    def __new__(cls, *args, **kwargs):
+        print("this is MetaClass.__new__()")
+        return super().__new__(cls, *args, **kwargs)
+
+
+class User(metaclass=MetaClass):
+    def __init__(self, name):
+        print("this is User.__init__()")
+        self.name = name
+
+    def __str__(self):
+        print("this is User.__str__()")
+        return "user"
+
+
+if __name__ == "__main__":
+    user = User(name="Sancho")
+    print(user)
+
+# 输出：
+# this is MetaClass.__new__()
+# this is User.__init__()
+# this is User.__str__()
+# user
+```
+### !orm
 ## 迭代器生成器
+### 迭代协议
+- 迭代器是访问集合内元素的一种方式，一般用来遍历数据
+- 迭代器(\_\_iter\_\_)和以下标(\_\_getiter\_\_)的访问方式不一样，采用惰性方式
+- 可迭代对象提供\_\_iter\_\_()魔法函数；迭代器提供\_\_iter\_\_()和\_\_next\_\_()两个魔法函数
+### 迭代器和可迭代对象
+- for循环优先寻找\_\_iter\_\_()，如果不存在则寻找\_\_getier\_\_()后开始遍历
+```python
+# 迭代器实现
+class Company(object):
+    def __init__(self, employee_list) -> None:
+        self.employee_list = employee_list
+
+    def __getitem__(self, item):
+        return self.employee_list[item]
+
+
+if __name__ == "__main__":
+    company = Company(["Sancho", "Cat", "Dog"])
+    for item in company:
+        print(item)
+
+# 输出：
+# Sancho
+# Cat
+# Dog
+```
+- iter()函数实现将可迭代对象添加\_\_next\_\_()魔法函数，返回迭代器
+```python
+# 迭代器具体实现
+from collections.abc import Iterator
+
+
+class Company(object):
+    def __init__(self, employee_list):
+        self.employee_list = employee_list
+
+    def __iter__(self):
+        return MyIterator(self.employee_list)
+
+
+class MyIterator(Iterator):
+    def __init__(self, employee_list) -> None:
+        self.iter_list = employee_list
+        self.index = 0
+
+    def __next__(self):
+        try:
+            word = self.iter_list[self.index]
+        except IndexError:
+            raise StopIteration
+        self.index += 1
+        return word
+
+
+if __name__ == "__main__":
+    company = Company(["Sancho", "Cat", "Dog"])
+    my_itor = iter(company)
+    while True:
+        try:
+            print(next(my_itor))
+        except StopIteration:
+            break
+
+# 输出：
+# Sancho
+# Cat
+# Dog
+```
+### 生成器函数
+- 函数里有yield关键字就可称为生成器，返回生成器对象；生成器也实现了迭代器协议（可迭代）
+```python
+def gen_func():
+    yield 1
+    yield 2 # 可继续返回值
+    yield 3
+
+
+if __name__ == "__main__":
+    gen = gen_func()
+    print([i for i in gen]) # [1, 2, 3]
+```
+```python
+# 斐波拉契数列
+def gen_fib(index):
+    n, a, b = 0, 0, 1
+    while n < index:
+        yield b
+        a, b = b, a + b
+        n += 1
+
+
+if __name__ == "__main__":
+    print({i for i in gen_fib(10)})  # {1, 2, 3, 34, 5, 8, 13, 21, 55}
+```
+### 生成器原理
+- Python创建对象时会用PyEval_EvalFramEx(C函数)去执行函数，首先创建一个栈帧对象(stack frame)，将函数代码编译成字节码对象；当调用子函数时又会创建一个栈帧对象，并申请控制权；所有栈帧都分配到堆内存上，这决定了栈帧可以独立于调用者
+![image](https://user-images.githubusercontent.com/42240228/176946907-81870e03-6a9f-4b08-a4ce-edf7fa92a0b0.png)
+```
+# 栈帧的调用流程
+import inspect
+
+frame = None
+
+
+def foo():
+    bar()
+
+
+def bar():
+    global frame
+    frame = inspect.currentframe()  # 获取当前栈帧，并赋值于全局变量
+
+
+if __name__ == "__main__":
+    foo()
+    print(frame.f_code.co_name)  # bar; 输出之前栈帧
+    caller_frame = frame.f_back  # 查看上一级栈帧
+    print(caller_frame.f_code.co_name)  # foo； 输出上一级栈帧
+
+```
+- 生成器函数在创建栈帧时，记录最近执行的代码位置(f_lasti)和环境变量(locals)
+![image](https://user-images.githubusercontent.com/42240228/176947405-207ee667-9adf-4f44-af49-d25310499073.png)
+```
+# 生成器的栈帧调用流程
+def gen_func():
+    yield 1
+    name = "Sancho"
+    yield 2
+    age = 30
+    return "Hello"
+
+
+if __name__ == "__main__":
+    gen = gen_func()
+    print(gen.gi_frame.f_lasti)
+    print(gen.gi_frame.f_locals)
+    next(gen)
+    print(gen.gi_frame.f_lasti)
+    print(gen.gi_frame.f_locals)
+    next(gen)
+    print(gen.gi_frame.f_lasti)
+    print(gen.gi_frame.f_locals)
+
+# 输出：
+# -1
+# {}
+# 2
+# {}
+# 12
+# {'name': 'Sancho'}
+```
+### UserList中的生成器
+- Python中list使用C语言实现因此查看不到源码，但Python内置了UserList类型方便用户继承；
+- 在collections模块中的UserList继承链是：MutableSequence → Sequence；
+- Sequence中的\_\_iter\_\_()魔法函数实现了生成器，在每次调用list时进行循环
+![image](https://user-images.githubusercontent.com/42240228/176950685-4acbd0b1-6377-4c19-84ce-99305dfedccd.png)
+### 生成器实例：大文件读取
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: read_files.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+
+
+"""
+功能：文件读取
+需求：支持读取大量数据，数据只有一行（有分隔符）
+"""
+
+
+def my_read_lines(f, newline):
+    buf = ""  # 缓存
+    while True:
+        while newline in buf:  # 在缓存中查找分隔符
+            pos = buf.index(newline)
+            yield buf[:pos]  # 找到读取到的文本到分隔符位置之间文本并返回
+            buf = buf[pos + len(newline):] # 更新，上次位置往后取值
+        chunk = f.read(4096)  # 每次读取的数量
+
+        if not chunk:  # 已经读到文件结尾
+            yield buf
+            break
+        buf += chunk # 读取下一批
+
+
+if __name__ == "__main__":
+    with open("input.tex") as f:
+        for line in my_read_lines(f, "{|}"):
+            print(line)
+```
 ## socket编程
 ## 多线程、多进程、线程池
 ## 协程和异步IO
