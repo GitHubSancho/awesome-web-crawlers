@@ -591,7 +591,7 @@ if __name__ == "__main__":
 ### 生成器原理
 - Python创建对象时会用PyEval_EvalFramEx(C函数)去执行函数，首先创建一个栈帧对象(stack frame)，将函数代码编译成字节码对象；当调用子函数时又会创建一个栈帧对象，并申请控制权；所有栈帧都分配到堆内存上，这决定了栈帧可以独立于调用者
 ![image](https://user-images.githubusercontent.com/42240228/176946907-81870e03-6a9f-4b08-a4ce-edf7fa92a0b0.png)
-```
+```python
 # 栈帧的调用流程
 import inspect
 
@@ -616,7 +616,7 @@ if __name__ == "__main__":
 ```
 - 生成器函数在创建栈帧时，记录最近执行的代码位置(f_lasti)和环境变量(locals)
 ![image](https://user-images.githubusercontent.com/42240228/176947405-207ee667-9adf-4f44-af49-d25310499073.png)
-```
+```python
 # 生成器的栈帧调用流程
 def gen_func():
     yield 1
