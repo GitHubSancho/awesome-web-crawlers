@@ -648,7 +648,7 @@ if __name__ == "__main__":
 ### UserList中的生成器
 - Python中list使用C语言实现因此查看不到源码，但Python内置了UserList类型方便用户继承；
 - 在collections模块中的UserList继承链是：MutableSequence → Sequence；
-- Sequence中的\_\_iter\_\_()魔法函数实现了生成器，在每次调用list时进行循环
+- Sequence中的\_\_iter\_\_()魔法函数实现了生成器，在每次调用list时进行循环  
 ![image](https://user-images.githubusercontent.com/42240228/176950685-4acbd0b1-6377-4c19-84ce-99305dfedccd.png)
 ### 生成器实例：大文件读取
 ```python
@@ -686,6 +686,179 @@ if __name__ == "__main__":
             print(line)
 ```
 ## socket编程
+### HTTP、Soket、TCP
+- OSI五层网络模型（应用层、传输层、网络层、数据链路层、物理层）详见[计算机网络](计算机网络.md)
+- HTTP、TCP属于网络协议，socket是一个api接口，与传输层(TCP)交互
+### client和server实现通信
+1. 服务端绑定地址、协议、端口(作用于具体应用)
+2. 服务端实时监听来自客户端的请求
+3. 服务端开放接收数据
+4. 服务端等待客户端发起连接请求
+5. 服务端接收来自客户端发送的数据
+6. 服务端返回数据给客户端
+7. 断开连接  
+![image](https://user-images.githubusercontent.com/42240228/176974138-877f1d30-5ccd-4a16-a504-1009b31026f1.png)
+- socket协议
+  - AF_INET:IPv4；AF_INET6:IPv6；AF_IPX:进程间通信
+  - SOCK_STREAM:TCP；SOC K_DGRAM:UDP
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_server.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+"""
+服务端实现
+"""
+
+import socket
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(('0.0.0.0', 8000))
+server.listen()
+sock, addr = server.accept()
+
+# 获取从客户端发送的数据
+data = sock.recv(1024)  # 设置最大获取字节
+print(data.decode("utf8"))  # Sancho
+sock.send("Hello {}".format(data.decode("utf-8")).encode("utf8"))
+server.close()
+sock.close()
+```
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_client.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+"""
+客户端实现
+"""
+
+import socket
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(("127.0.0.1", 8000))
+client.send("Sancho".encode("utf8"))
+data = client.recv(1024)
+print(data.decode("utf8"))  # Hello Sancho
+client.close()
+```
+### socket实现聊天和多用户连接
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_server.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+"""
+服务端实现
+"""
+
+import socket
+import threading
+
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(('0.0.0.0', 8000))
+server.listen()
+
+
+def handle_socket(sock, addr):
+    while True:
+        data = sock.recv(1024).decode("utf8")
+        print(data)
+        if data == "logout":
+            break
+        re_data = input()  # 手动输入数据交互
+        sock.send(re_data.encode("utf8"))
+    server.close()
+    sock.close()
+
+
+while True:  # 持续交流
+    # 多用户连接
+    sock, addr = server.accept()
+    client_thread = threading.Thread(target=handle_socket, args=(sock, addr))
+    client_thread.start()
+
+    # data = sock.recv(1024)  # 设置最大获取字节
+    # print(data.decode("utf8"))
+    # re_data = input()
+    # sock.send(re_data.encode("utf8"))
+```
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_client.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+"""
+客户端实现
+"""
+
+import socket
+
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect(("127.0.0.1", 8000))
+
+while True:
+    re_data = input()
+    client.send(re_data.encode("utf8"))
+    if re_data == "logout":
+        client.close()
+        break
+    data = client.recv(1024).decode("utf8")
+    print(data)  # Hello Sancho
+
+```
+### socket模拟http请求
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_http.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+
+import socket
+from this import d
+from urllib.parse import urlparse
+
+
+def get_url(url):
+    # url解析
+    url = urlparse(url)
+    host = url.netloc  # 主域名解析
+    path = url.path
+    if path == "":
+        path = "/"
+
+    # 建立连接
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((host, 80))  # 默认80端口
+    # 发送HTTP请求
+    client.send(
+        "GET {} HTTP/1.1\r\nHost:{}\r\nConnection:close\r\n\r\n".format(
+            path, host).encode("utf-8"))
+
+    # 接收数据
+    data = b""
+    while True:
+        c = client.recv(1024)  # 缓存
+        # 超出最大字节处理
+        if c:
+            data += c
+        else:
+            break
+
+    data = data.decode("utf8").split("\r\n\r\n")  # 去除HTTP头部信息
+    print(data)
+    client.close()
+
+
+if __name__ == "__main__":
+    get_url("http://www.baidu.com")
+
+```
 ## 多线程、多进程、线程池
 ## 协程和异步IO
 ## 并发编程
