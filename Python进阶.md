@@ -112,7 +112,7 @@ a.extend([5,6]) # [1,2,3,4,5,6]
 a.append((7,8)) #[1,2,3,4,5,6,(7,8)]
 ```
 ### 实现可切片的对象
-- 切片格式[start:end:step]
+- 切片格式[start: end: step]
 - start为起始位置默认为0，end截止（不包含）位置，step为步长默认为1
   - start为0可省略，step为1可省略（也可省略第二个冒号）
   - step为负整数表示反向切片，此时start应比end值大
@@ -343,6 +343,110 @@ list是可变对象；
 """
 ```
 ## 元类编程
+### property动态属性
+- `if __name__ == "__main__":`的作用是在import导入后不会自动运行
+- @property将函数变为属性描述符;@name.setter可以设置动态属性
+```python
+from datetime import date, datetime
+
+
+class User:
+    def __init__(self, name, birthday) -> None:
+        self.name = name
+        self.birthday = birthday
+        # self.age = 0
+
+    # def get_age(self):
+    #     return datetime.now().year - self.birthday.year
+
+    @property
+    def age(self):
+        return datetime.now().year - self.birthday.year
+
+
+if __name__ == "__main__":
+    user = User("bobby", date(year=1999, month=8, day=1))
+    print(user.age) # 23
+```
+### __getattr__、__getattribute__魔法函数
+- \_\_getattr\_\_()在查找不到属性时调用
+```python
+class User:
+    def __init__(self, name) -> None:
+        self.name = name
+
+    def __getattr__(self, item):
+        return self.name + ": not found."
+        
+if __name__ == "__main__":
+    user = User("Sancho")
+    print(user.age)  # Sancho :not found.
+
+```
+- \_\_getattribute\_\_()查找属性时调用
+```python
+class User:
+    def __init__(self, name) -> None:
+        self.name = name
+
+    def __getattribute__(self, __name: str):
+        return "Sancho"
+
+
+if __name__ == "__main__":
+    user = User("Sancho")
+    print(user.age)  # Sancho
+    print(user.name) # Sancho
+```
+### 属性描述符和属性查找过程
+- 属性描述符可以重复利用一个类参数类型
+```
+import numbers
+
+
+class IntField:
+    # 属性描述符
+    def __get__(self, instance, owner):
+        return self.value
+
+    def __set__(self, instance, value):
+        if not isinstance(value, numbers.Integral):
+            raise ValueError("int value need!")
+        self.value = value
+
+    # def __delite__(self,instance):
+    #     pass
+
+class NonDataInField:
+    # 非属性描述符
+    def __get__(self,instance,owner):
+        return self.value
+
+
+class User:
+    age = IntField()
+
+
+if __name__ == "__main__":
+    user = User()
+    user.age = 23
+    print(user.age) # 23
+    user.age = "a" # ValueError: int value need!
+```
+- 属性查找顺序
+  1. 如果属性出现在类或其基类的__dict__()中，且属性是data descriptor（数据描述符），那么则调用其__get__()方法
+  2.如果属性出现在obj的的__dict__中，那么直接返回obj.__dict__['属性']
+  3. 如果属性出现在类或其基类的__dict__中
+  3.1 如果age是non-data descriptor（），那么调用其__get__方法
+  3.2 返回__dict__['属性']
+  4. 如果obj有__getattr__方法，调用__getattr__()方法
+  5. 抛出AttributeError
+### __new__和__init__的区别
+- \_\_new\_\_()控制对象的生成过程，在生成过程之前
+  - \_\_new\_\_()不返回对象，则不会调用\_\_init\_\_()函数
+- \_\_init\_\_()控制参数，完善对象，在对象生成之后
+### 自定义元类
+### 元类实现简单的orm
 ## 迭代器生成器
 ## socket编程
 ## 多线程、多进程、线程池
