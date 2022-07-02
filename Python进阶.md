@@ -860,6 +860,109 @@ if __name__ == "__main__":
 
 ```
 ## 多线程、多进程、线程池
+### GIL(global interpreter lock)
+- Python的线程对应C语言中的一个线程
+- GIL使得同一时刻只有一个线程在一个cpu上执行字节码，无法将多个线程映射到多个CPU上执行
+- GIL会根据执行的字节码行数以及时间片释放，遇到IO操作时主动释放
+### 多线程
+- 对于IO操作，多线程和多进程性能差别不大（甚至优于）
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: py_thread.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+"""
+模拟网络请求
+"""
+
+import time
+import threading
+
+
+def get_detail_html(url):
+    print("get detail html started")
+    time.sleep(2)
+    print("get detail html end")
+
+
+def get_detail_url(url):
+    print("get detail url started")
+    time.sleep(4)
+    print("get detail url end")
+
+
+if __name__ == "__main__":
+    thread1 = threading.Thread(target=get_detail_html, args=("", ))
+    thread2 = threading.Thread(target=get_detail_url, args=("", ))
+
+    # 线程守护（主线程退出时子线程一并退出）
+    # thread2.setDaemon(True)
+    # thread2.setDaemon(True)
+
+    start_time = time.time()
+    thread1.start()
+    thread2.start()
+
+    # 线程阻塞（当线程运行结束后再运行之后代码）
+    thread1.join()
+    thread2.join()
+
+    print("last time: {}".format(time.time() - start_time))
+```
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: py_thread2.py
+#CREATE_TIME: 2022-07-02
+#AUTHOR: Sancho
+"""
+继承多线程，模拟网络请求
+"""
+
+import time
+import threading
+
+
+class GetDetailHtml(threading.Thread):
+    def __init__(self, name) -> None:
+        super().__init__(name=name)  # 传递线程名
+
+    def run(self):
+        print("get detail html started")
+        time.sleep(2)
+        print("get detail html end")
+
+
+class GetDetailUrl(threading.Thread):
+    def __init__(self, name) -> None:
+        super().__init__(name=name)
+
+    def run(self):
+        print("get detail url started")
+        time.sleep(4)
+        print("get detail url end")
+
+
+if __name__ == "__main__":
+    thread1 = GetDetailHtml("get_detail_html")
+    thread2 = GetDetailUrl("get_detail_url")
+
+    start_time = time.time()
+    thread1.start()
+    thread2.start()
+
+    # 线程阻塞（当线程运行结束后再运行之后代码）
+    thread1.join()
+    thread2.join()
+
+    print("last time: {}".format(time.time() - start_time))
+```
+### 线程间通信(Queue)
+### 线程同步(Lock、RLock、semaphores、Condition）
+### concurrent线程池编码
+### 多进程编程(multiprocessing)
+### 进程间通信
 ## 协程和异步IO
 ## 并发编程
 
