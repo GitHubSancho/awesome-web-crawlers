@@ -958,7 +958,7 @@ if __name__ == "__main__":
 
     print("last time: {}".format(time.time() - start_time))
 ```
-### 线程间通信(Queue)
+### 线程间通信(消息队列、Queue)
 - 线程间通信时变量（参数传递、全局变量、外部文件变量等方式）并不可靠（安全性不高）
 - Queue通过消息队列方式实现，可以控制多线程间通信顺序(阻塞)
 ```python 
@@ -1013,9 +1013,318 @@ if __name__ == '__main__':
     print(threads)
 ```
 ### 线程同步(Lock、RLock、semaphores、Condition）
-### concurrent线程池编码
+- 字节码处理读写时可能遇到多个线程同时对变量操作导致与预期结果不一致
+- Lock锁控制字节码单元占用和释放交替运行（会影响运行性能）,可能会引起死锁（连续acquire[包括子函数acquire]、没有release、互相等待等）
+- RLock，可重入的锁，同一个线程可连续调用多次，需要acquire和release同等数量的调用
+```python
+import threading
+from threading import Lock
+
+total = 0
+lock = Lock()
+
+
+def add():
+    global total
+    global lock
+
+    for i in range(100):
+        lock.acquire() # 占用
+        total += 1
+        lock.release() # 释放
+
+
+def desc():
+    global total
+    global lock
+
+    for i in range(100):
+        lock.acquire()
+        total -= 1
+        lock.release()
+
+
+thread1 = threading.Thread(target=add)
+thread2 = threading.Thread(target=desc)
+print(total) # 0
+```
+- Condition，条件变量，用户复杂的线程间同步（切换）
+  - condition有两层锁，一个底层的锁会在线程调用wait方法时释放，另一个上层锁会在每次调用wait时分配一把锁并放入到cond等待队列，等待notify方法唤醒
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: thread_condition.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+两线程对诗
+解决两个线程之间切换、同步的问题
+"""
+
+import threading
+
+
+class Xiaoai(threading.Thread):
+    def __init__(self, cond):
+        super().__init__(name="小爱同学")
+        self.cond = cond
+
+    def run(self):
+        with self.cond:  # 等于调用enter和exit两个魔法函数，实现cond.acquire和cond.release
+            self.cond.wait()  # 等待唤醒
+            print("{name}: 在".format(name=self.name))
+            self.cond.notify()  # 释放
+
+            self.cond.wait()  # 等待唤醒
+            print("{name}: 奔流到海不复回".format(name=self.name))
+            self.cond.notify()  # 释放
+
+            self.cond.wait()  # 等待唤醒
+            print("{name}: 朝如青丝暮成雪".format(name=self.name))
+            self.cond.notify()  # 释放
+
+
+class Tianmao(threading.Thread):
+    def __init__(self, cond):
+        super().__init__(name="天猫精灵")
+        self.cond = cond
+
+    def run(self):
+        with self.cond:  # 等于调用enter和exit两个魔法函数，实现cond.acquire和cond.release
+            print("{name}: 小爱同学".format(name=self.name))
+            self.cond.notify()  # 释放
+            self.cond.wait()  # 等待唤醒
+
+            print("{name}: 君不见，黄河之水天上来".format(name=self.name))
+            self.cond.notify()  # 释放
+            self.cond.wait()  # 等待唤醒
+
+            print("{name}: 君不见，高堂明镜悲白发".format(name=self.name))
+            self.cond.notify()  # 释放
+            self.cond.wait()  # 等待唤醒
+
+
+if __name__ == "__main__":
+    cond = threading.Condition()
+    xiaoai = Xiaoai(cond)
+    tianmao = Tianmao(cond)
+
+    # 一定要先wait的的程序先执行，否则获取不到信号
+    xiaoai.start()
+    tianmao.start()
+
+# 输出：
+# 天猫精灵: 小爱同学
+# 小爱同学: 在
+# 天猫精灵: 君不见，黄河之水天上来
+# 小爱同学: 奔流到海不复回
+# 天猫精灵: 君不见，高堂明镜悲白发
+# 小爱同学: 朝如青丝暮成雪
+```
+- Semaphore，用于控制进入数量的锁
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: thread_semaphore.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+模拟爬虫并发操作
+文件读取时允许多个线程，但写入时一般不允许多个线程同时写入
+"""
+
+import threading
+import time
+
+
+class HtmlSpider(threading.Thread):
+    """ 模拟爬取网页 """
+    def __init__(self, url, sem):
+        super().__init__()
+        self.url = url
+        self.sem = sem
+
+    def run(self):
+        time.sleep(2)
+        print("got html text success")
+        self.sem.release()  # 释放线程，且每次调用可并发数+1
+
+
+class UrlProducer(threading.Thread):
+    def __init__(self, sem):
+        super().__init__()
+        self.sem = sem
+
+    def run(self):
+        for i in range(20):  # 创建里线程
+            self.sem.acquire()  # 占用，且每次调用可并发数-1
+            html_thread = HtmlSpider("https://baidu.com/id:{}".format(i),
+                                     self.sem)
+            html_thread.start()
+            # self.sem.release() 不要在此处释放，应在线程工作结束时，否则不能控制并发
+
+
+if __name__ == "__main__":
+    sem = threading.Semaphore(3)  # 并发数
+    url_producer = UrlProducer(sem)
+    url_producer.start()
+```
+### 线程池(concurrent)
+- 线程池作用：主线程中可以获取某一个线程的状态或者某一个任务的状态以及返回值；当一个线程完成的时候我们主线程立刻知道
+- concurrent.futures可以让多线程和多进程编码接口一致
+  - 
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: concurrent_futures.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+模拟爬虫线程池
+"""
+
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait
+
+
+def get_html(times):
+    time.sleep(times)
+    print("get page {}".format(times))
+    return times
+
+
+executor = ThreadPoolExecutor(max_workers=2)  # 最大线程数
+
+urls = [3, 2, 4]  # 模拟传入的链接
+
+# 立即返回法
+all_task = [executor.submit(get_html, (url)) for url in urls]  # 提交任务到线程池
+for future in as_completed(all_task):
+    # 阻塞，获取已完成的任务
+    data = future.result()
+    print("get {} page success".format(data))
+# wait(all_task) # 阻塞等待完成，returen_when参数设置等待模式；此处非必要
+
+# 顺序返回法
+# for data in executor.map(get_html,urls): # 依次传递参数2到参数1的函数中
+#     print("get {} page success".format(data))
+```
 ### 多进程编程(multiprocessing)
+- Python中有GIL锁机制，在多线程中无法发挥CPU多核优势，所以在需要耗CPU的计算类操作时使用多进程；读写时多线程影响小，但多进程会存在进程切换代价，因此IO操作时更需要多线程
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: progress_test.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+多线程和多进程的速度对比测试
+"""
+
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor
+
+
+def fib(n):
+    if n < 2:
+        return 1
+    return fib(n - 1) + fib(n - 1)
+
+
+def random_sleep(n):
+    time.sleep(n)
+    return n
+
+
+if __name__ == "__main__":
+    # 计算测试
+    # with ThreadPoolExecutor(3) as executor:
+    #     all_tasks = [executor.submit(fib, (num)) for num in range(25, 30)]
+    #     start_time = time.time()
+    #     for future in as_completed(all_tasks):
+    #         data = future.result()
+    #         print("exe result: {}".format(data))
+
+    #     print("Thread last time is: {}".format(time.time() - start_time)) # Thread last time is: 108.5627212524414
+
+    # with ProcessPoolExecutor(3) as executor:
+    #     all_tasks = [executor.submit(fib, (num)) for num in range(25, 30)]
+    #     start_time = time.time()
+    #     for future in as_completed(all_tasks):
+    #         data = future.result()
+    #         print("exe result: {}".format(data))
+
+    #     print("Process last time is: {}".format(time.time() - start_time)) # Process last time is: 65.22123789787292
+
+    # IO模拟测试
+    with ThreadPoolExecutor(3) as executor:
+        all_tasks = [executor.submit(random_sleep, (num)) for num in [2] * 30]
+        start_time = time.time()
+        for future in as_completed(all_tasks):
+            data = future.result()
+            print("exe result: {}".format(data))
+
+        print("Thread last time is: {}".format(
+            time.time() -
+            start_time))  # Thread last time is: 20.08672332763672
+
+    with ProcessPoolExecutor(3) as executor:
+        all_tasks = [executor.submit(random_sleep, (num)) for num in [2] * 30]
+        start_time = time.time()
+        for future in as_completed(all_tasks):
+            data = future.result()
+            print("exe result: {}".format(data))
+
+        print("Thread last time is: {}".format(
+            time.time() -
+            start_time))  # Thread last time is: 20.204091787338257
+```
+- multiprocessing是比concurrent更底层的包，更加灵活
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: multiprocessing.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+模拟爬虫多进程
+"""
+
+import time
+import multiprocessing
+
+
+def get_html(n):
+    time.sleep(n)
+    print("sub_progress success")
+    return n
+
+
+if __name__ == "__main__":
+    pool = multiprocessing.Pool()  # 默认最大CPU核数
+    result = pool.apply_async(get_html, (2, ))  # 异步提交任务
+
+    pool.close()  # 在join之前必须调用close关闭接收任务
+    pool.join()  # 阻塞等待所有任务完成
+    print(result.get())  # 获取返回值
+
+    # imap,顺序返回
+    # pool2 = multiprocessing.Pool()
+    # for result in pool2.imap(get_html, [1, 5, 3]):
+    #     print("{} sleep success".format(result))
+
+    # imap_unordered,立即返回
+    # pool3 = multiprocessing.Pool()
+    # for result in pool3.imap_unordered(get_html, [1, 5, 3]):
+    #     print("{} sleep success".format(result))
+```
 ### 进程间通信
+- 多进程之间一般不能像多线程之间一样通信
+- 共享变量在多进程中不适用，Queue模块不适用多进程之间通信
+- 多进程通信可使用multiprocessing.Queue，但不适用进程池；进程池中通信可使用multiprocessing.Mannager().Queue
+  - multiprocessing.Mannager还可以维护公共变量，如`p_dict = multiprocessing.Mannager().dict()`
+- 两个进程通信还可以使用multiprocessing.pipe()相当于简化版的Queue
 ## 协程和异步IO
 ## 并发编程
 
