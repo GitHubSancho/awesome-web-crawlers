@@ -1326,5 +1326,195 @@ if __name__ == "__main__":
   - multiprocessing.Mannager还可以维护公共变量，如`p_dict = multiprocessing.Mannager().dict()`
 - 两个进程通信还可以使用multiprocessing.pipe()相当于简化版的Queue
 ## 协程和异步IO
+### 并发、并行、同步、异步、阻塞、非阻塞
+- 并发指一个时间段内，有几个程序在同一个CPU上运行，但是任意时刻只有一个程序在CPU上运行（进程切换）
+- 并行是指任意时刻点上，有多个程序同时运行在多个CPU上（并行数与核心数一致）
+- 同步是指代码调用IO操作时，必须等待IO操作完成才返回的调用方式
+- 异步是指代码调用IO操作时，不必等IO操作完成就返回的调用方式
+- 阻塞是指调用函数的时候当前线程被挂起
+- 非阻塞是指调用函数的时候当前线程不会被挂起，而是立即返回
+### C10K问题和IO多路复用（select、poll、epoll）
+- C10K问题(1999年)：如何在一颗1GHz CPU，2G内存，1Gbps网络环境下，让单台服务器同时为一万个客户端提供FTP服务
+- Unix下五种I/O模型：阻塞式I/O，非阻塞式I/O，I/O复用，信号驱动式I/O，异步I/O  
+![image](https://user-images.githubusercontent.com/42240228/177023415-5ce14ca3-f024-486a-840d-10aacd417b8a.png)  
+![image](https://user-images.githubusercontent.com/42240228/177023426-bb76e5d4-5222-4577-8c39-fedf52550f20.png)  
+![image](https://user-images.githubusercontent.com/42240228/177023555-a6a2ad5f-75f4-4b74-aaf3-b56d34499844.png)  
+![image](https://user-images.githubusercontent.com/42240228/177023583-620c35cf-962d-45b6-a36c-4657367323da.png)  
+![image](https://user-images.githubusercontent.com/42240228/177023652-84debb2e-681c-4eb2-95e3-ca21da6021c4.png)  
+- select,poll,epoll都是IO多路复用机制。I/O多路复用就是通过一种机制，一个进程可以监视多个描述符，一旦某个描述符就绪（一般就是读就绪或者写就绪），能够通知程序进行相应的读写操作。但select，poll，epoll本质上都是同步I/O，因为他们都需要在读写事件就绪后自己负责进行读写，也就是说这个读写过程是阻塞的，而异步I/O则无需自己负责进行读写，异步I/O的实现会负责把数据从内核拷贝到用户空间
+- select函数监视的文件描述符分3类：writefds、readfds、exceptfds，调用后select函数会阻塞，直到有描述符就绪（有数据可读、可写或者except），或者超时（timeout指定等待时间，设为null立即返回），函数返回后，可以通过遍历fdset来找到就绪的描述符
+  - select有良好的跨平台性，缺点是单个进程能够监视文件描述符的数量存在最大限制，在Linux上一般为1024，可通过修改宏定义或重新编译内核的方式提升，但也会造成效率降低
+- poll不同于select使用三个位图表示三个fdset的方式，poll使用pollfd指针实现；pollfd结构包含要监视的event和发生的event，不再使用select"参数-值"传递的方式，同时pollfd并没有最大数量限制（但数量过大后性能也会下降），和select函数一样，poll返回后需要轮询pollfd来获取就绪的描述符
+  - select和poll都需要在返回后，通过遍历文件描述符来获取已经就绪的socket，事实上同时连接的大量客户端在一时刻可能只有很少的处于就绪状态，因此随着监视器的描述符数量增长，其效率也会线性下降
+- epoll(不支持windows)，相对select和poll来说更加灵活，没有描述符限制。epoll使用一个文件描述符管理多个描述符，将用户关系的文件描述符的事件存放到内核的一个事件表中，这样在用户空间和内核空间的copy只需一次
+- 高并发、连接活跃度相对不高（网页），epoll比select好；并发性不高，连接活跃度高（游戏），select比epoll好
+### epoll+回调+事件循环模式
+- 非阻塞IO和select对比
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_http_nonblocking.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+通过非阻塞io实现http请求
+"""
+
+import socket
+from this import d
+from urllib.parse import urlparse
+
+
+def get_url(url):
+    # url解析
+    url = urlparse(url)
+    host = url.netloc  # 主域名解析
+    path = url.path
+    if path == "":
+        path = "/"
+
+    # 建立连接
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.setblocking(False)  # 非阻塞
+    try:  # 因为定义了非阻塞，程序会继续运行可能请求失败，所以需要拦截报错
+        client.connect((host, 80))  # 默认80端口
+    except BlockingIOError as e:
+        pass
+    while True:
+        # 发送HTTP请求
+        # 因为非阻塞，所以需要循环判断是否连接成功再发送
+        try:
+            client.send(
+                "GET {} HTTP/1.1\r\nHost:{}\r\nConnection:close\r\n\r\n".
+                format(path, host).encode("utf-8"))
+            break
+        except OSError as e:
+            pass
+
+    # 接收数据
+    data = b""
+    while True:
+        # 循环判断是否接收到数据
+        try:
+            c = client.recv(1024)  # 缓存
+        except BlockingIOError as e:
+            continue
+
+        # 超出最大字节处理
+        if c:
+            data += c
+        else:
+            break
+
+    data = data.decode("utf8").split("\r\n\r\n")  # 去除HTTP头部信息
+    print(data)
+    client.close()
+
+
+if __name__ == "__main__":
+    import time
+    stime = time.time()
+    for i in range(20):
+        get_url("http://www.baidu.com")
+    print(time.time() - stime)  # 1.9488499164581299
+
+```
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: socket_http_select.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+"""
+通过select实现http请求
+"""
+
+import socket
+from selectors import DefaultSelector, EVENT_READ, EVENT_WRITE
+from tracemalloc import start
+from urllib.parse import urlparse
+
+selector = DefaultSelector()
+urls = []
+stop = False
+
+
+class Fetcher:
+    def connected(self, key):
+        """ 连接成功后 """
+        selector.unregister(key.fd)  # 注销监控事件
+        self.client.send(
+            "GET {} HTTP/1.1\r\nHost:{}\r\nConnection:close\r\n\r\n".format(
+                self.path, self.host).encode("utf-8"))
+        selector.register(self.client.fileno(), EVENT_READ,
+                          self.readable)  # 注册可读监听事件
+
+    def readable(self, key):
+        """ 可读状态时 """
+        c = self.client.recv(1024)  # 缓存返回的数据
+        if c:
+            self.data += c
+        else:
+            # 数据读取完时
+            selector.unregister(key.fd)  # 注销监听事件
+            html_data = self.data.decode("utf8").split(
+                "\r\n\r\n")  # 去除HTTP头部信息
+            print(html_data)
+            self.client.close()
+            urls.remove(self.spider_url)
+            if not urls:
+                global stop
+                stop = True
+
+    def get_url(self, url):
+        self.spider_url = url
+        url = urlparse(url)
+        self.host = url.netloc
+        self.path = url.path
+        self.data = b""
+        if self.path == "":
+            self.path = "/"
+
+        # 建立连接
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client.setblocking(False)
+
+        # 等待连接成功
+        try:
+            self.client.connect((self.host, 80))
+        except BlockingIOError as e:
+            pass
+
+        # 注册（文件描述符，事件，回调函数）
+        selector.register(self.client.fileno(), EVENT_WRITE,
+                          self.connected)  # 监控client可写时调用函数
+
+
+def loop():
+    """事件循环：不停地请求socket状态并调用对应回调函数"""
+    while not stop:
+        ready = selector.select()
+        for key, mask in ready:
+            call_back = key.data
+            call_back(key)
+
+
+if __name__ == "__main__":
+    # fetcher = Fetcher()
+    import time
+    stime = time.time()
+    for url in range(20):
+        url = "http://www.baidu.com"
+        urls.append(url)
+        fetcher = Fetcher()
+        fetcher.get_url(url)
+    loop()
+    print(time.time() - stime)  # 0.09574317932128906
+```
+### 回调
+### C10M问题和协程
+### 生成器send和yield from
+### 生成器如何变成协程
+### async和await原生协程
 ## 并发编程
 
