@@ -1596,7 +1596,7 @@ for value in chain(my_list, my_dict, range(4, 7)):
   - 子生成器退出时，最后return EXPR 会触发StopIteration（EXPR）异常
   - yield from表达式的值，是子生成器终止时，传递给StopIteration异常的第一个参数
   - 如果调用时出现StopIteration异常，委托生成器会恢复运行，同时其它异常会向上"冒泡"
-  - 传入委托生成器的异常里，除了GeneratorExit之外，其它所有异常全部传递给子生成器的.throw()方法，如果调用.throw()时出现StopIteration异常，纳米就恢复委托生成器的运行，其它异常全部向上"冒泡"
+  - 传入委托生成器的异常里，除了GeneratorExit之外，其它所有异常全部传递给子生成器的.throw()方法，如果调用.throw()时出现StopIteration异常，那么就恢复委托生成器的运行，其它异常全部向上"冒泡"
   - 如果在委托生成器上调用.close()或传入GenneratorExit异常，会调用子生成器的.close()方法，没有的话就不调用;如果在调用.close()时抛出了异常，那就向上"冒泡"，否则委托生成器就会抛出GenneratorExit异常
 ```python
 #!/usr/bin/env python
