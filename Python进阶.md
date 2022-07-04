@@ -1522,6 +1522,142 @@ if __name__ == "__main__":
   2. 不再需要锁，并发性高。如果单线程内切换函数，性能远高于线程切换，并发性更高
 - 协程概念：有多个入口的函数，或称可以暂停的函数（可以向暂停的地方传入值）
 ### 生成器进阶send、close、thow
+- 生成器不仅可以输出值，也可以接收值(send)；通过send可以传递值且运行生成器
+- 生成器可以关闭(close)
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: gen_send.py
+#CREATE_TIME: 2022-07-03
+#AUTHOR: Sancho
+
+
+def foo():
+    print("starting...")
+    while True:
+        try:
+            res = yield 4
+        except Exception as e:
+            pass
+        print("res:", res)
+
+
+g = foo()
+print(next(g))  # 在send()传递值之前，必须next(gen)或gen.send(None)
+print("*" * 20)
+print(g.send("sancho"))
+
+g.throw(Exception, "download error")  # 抛出异常
+print(g.send("sancho"))
+
+g.close()  # 关闭生成器
+
+```
+- yield from可以简单理解依次取值（其内部还有catch异常）；yield from会通过委托生成器，在调用方和子生成器之间建立双向通道
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: yield_from.py
+#CREATE_TIME: 2022-07-04
+#AUTHOR: Sancho
+
+from itertools import chain
+
+my_list = [1, 2, 3]
+my_dict = {"Robin": "baidu.com", "Jack": "taobao"}
+
+
+def my_chain(*args, **kwargs):
+    for my_iterable in args:
+        yield from my_iterable  # 替代下面循环
+        # for value in my_iterable:
+        #     yield value
+
+
+# 方法1：
+# for value in my_chain(my_list, my_dict, range(10, 16)):
+#     print(value)
+
+# 方法2：
+for value in chain(my_list, my_dict, range(4, 7)):
+    print(value)
+
+# 输出：
+# 1
+# 2
+# 3
+# Robin
+# Jack
+# 4
+# 5
+# 6
+```
+  - 子生成器生产的值，直接传回调用方；调用方通过.send()发送值直接传递子生成器（如果是None调用子生成器__next__()，如果非None调用子生成器.send()）
+  - 子生成器退出时，最后return EXPR 会触发StopIteration（EXPR）异常
+  - yield from表达式的值，是子生成器终止时，传递给StopIteration异常的第一个参数
+  - 如果调用时出现StopIteration异常，委托生成器会恢复运行，同时其它异常会向上"冒泡"
+  - 传入委托生成器的异常里，除了GeneratorExit之外，其它所有异常全部传递给子生成器的.throw()方法，如果调用.throw()时出现StopIteration异常，纳米就恢复委托生成器的运行，其它异常全部向上"冒泡"
+  - 如果在委托生成器上调用.close()或传入GenneratorExit异常，会调用子生成器的.close()方法，没有的话就不调用;如果在调用.close()时抛出了异常，那就向上"冒泡"，否则委托生成器就会抛出GenneratorExit异常
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: yield_from_example.py
+#CREATE_TIME: 2022-07-04
+#AUTHOR: Sancho
+
+final_result = {}  # 用于接收最终结果
+
+
+def sales_sum(pro_name):
+    """ 子生成器 """
+    total = 0 # 销量累计
+    nums = [] # 整理销量数据
+    while True:
+        x = yield
+        if not x:  #取值结束
+            break
+        total += x
+        nums.append(x)
+    return total, nums
+
+
+def middle(key):
+    """ 委托生成器：行统计 """
+    while True:
+        final_result[key] = yield from sales_sum(key)
+        print(key + "销售统计完成！")
+
+
+def main():
+    """ 调用方 """
+    data_sets = {
+        "键盘销量": [500, 400, 300],
+        "耳机销量": [300, 200, 500],
+        "鼠标销量": [500, 600, 700]
+    }
+    for key, data_set in data_sets.items():
+        print("start key:", key)
+        m = middle(key)
+        m.send(None)  # 激活生成器
+        for value in data_set:
+            m.send(value) # 向子生成器发送数据
+        m.send(None) # 循环结束后告诉子生成器结束
+    print("final_result:", final_result)
+
+
+if __name__ == "__main__":
+    main()
+
+# 输出：
+# start key: 键盘销量
+# 键盘销量销售统计完成！
+# start key: 耳机销量
+# 耳机销量销售统计完成！
+# start key: 鼠标销量
+# 鼠标销量销售统计完成！
+# final_result: {'键盘销量': (1200, [500, 400, 300]), '
+# 耳机销量': (1000, [300, 200, 500]), '鼠标销量': (1800, [500, 600, 700])}
+```
 ### 生成器如何变成协程
 ### async和await原生协程
 ## 并发编程
