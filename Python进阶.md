@@ -1919,7 +1919,107 @@ if __name__ == "__main__":
     loop.run_until_complete(main())
     print(time.time() - stime)  # 0.09278202056884766
 ```
-### future和task
-### asyncio同步和通信
+~~### future和task~~
+~~### asyncio同步和通信~~
 ### aiohttp实现高并发爬虫
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: aiohttp_test.py
+#CREATE_TIME: 2022-07-06
+#AUTHOR: Sancho
 
+# !pip install aiohttp
+# !pip install aiomysql
+# !pip install pyquery
+
+import asyncio
+import aiohttp
+import aiomysql
+from numpy import insert
+import pyquery
+import re
+
+stopping = False
+start_url = "https://news.163.com/"
+waitting_urls = []
+seen_urls = set()
+sem = asyncio.Semaphore(3)
+
+async def fetch(url,session):
+    async with sem: 
+        try:
+            async with session.get(url) as resp:
+                if resp.status in [200, 201]:
+                    data = await resp.text()
+                    return data
+        except Exception as e:
+            print(e)
+
+
+def extract_urls(html):
+    urls = []
+    pq = pyquery.PyQuery(html)
+    for link in pq.items("a"):
+        url = link.attr("href")
+        if url and url.startswith("http") and url not in seen_urls:
+            urls.append(url)
+            waitting_urls.append(url)
+    return urls
+
+async def init_urls(url,session):
+
+
+
+async def article_handler(url,session,pool):
+    # 获取文章详情并且入库
+    html = await fetch(url,session)
+    seen_urls.add(url)
+    extract_urls(html)
+    pq = pyquery.PyQuery(html)
+    title = pq("title").text()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("SELECT 42;")
+            insert_sql = "insert into article_test(title) values('{}')".format(title)
+            await cur.execute(insert_sql)
+            print(cur.description)
+            (r,) = await cur.fetchone()
+            assert r == 42
+
+async def consumer(pool):
+    
+        while not stopping:
+            if len(waitting_urls) == 0:
+                await asyncio.sleep(0.1)
+                continue
+            url = waitting_urls.pop()
+            print("start get url: {}".format(url))
+            if re.match("https://www.163.com/dy/article/.*?.html",url):
+                if url not in seen_urls:
+                    asyncio.ensure_future(article_handler(url,session,pool))
+            else:
+                if url not in seen_urls:
+                    asyncio.ensure_future(init_urls(url,session))
+
+async def main(loop):
+    # 等待mysql建立连接
+    pool = await aiomysql.create_pool(host='127.0.0.1',
+                                      port=3306,
+                                      user='root',
+                                      password='',
+                                      db='mysql',
+                                      loop=loop,
+                                      charset='utf-8',
+                                      autocommit=True)
+    async with aiohttp.ClientSession() as session:
+        html = await fetch(start_url,session)
+        extract_urls(html)
+    asyncio.ensure_future(consumer(pool))
+
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    asyncio.ensure_future(main(loop))
+    loop.run_forever()
+```
