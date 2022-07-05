@@ -820,7 +820,6 @@ while True:
 #AUTHOR: Sancho
 
 import socket
-from this import d
 from urllib.parse import urlparse
 
 
@@ -1361,7 +1360,6 @@ if __name__ == "__main__":
 """
 
 import socket
-from this import d
 from urllib.parse import urlparse
 
 
@@ -1801,9 +1799,126 @@ loop.close()
 ```
 ![image](https://user-images.githubusercontent.com/42240228/177306667-8fe52865-40f9-45b3-8ae5-72eae2d99d21.png)
 ### call_soon、call_later、call_at、call_soon_threadsafe
-
+- loop.call_soon()立即执行（下一轮事件循环）
+- loop.call_later()指定延迟执行
+- loop.call_at()指定事件循环的时间执行
+- loop.call_soon_threadsafe()线程安全执行
 ### ThreadPoolExector + asyncio
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: thread_asyncio.py
+#CREATE_TIME: 2022-07-05
+#AUTHOR: Sancho
+"""
+多线程和异步
+"""
+import time
+import asyncio
+import socket
+from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor
+
+
+def get_url(url):
+    # url解析
+    url = urlparse(url)
+    host = url.netloc  # 主域名解析
+    path = url.path
+    if path == "":
+        path = "/"
+
+    # 建立连接
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((host, 80))  # 默认80端口
+    # 发送HTTP请求
+    client.send(
+        "GET {} HTTP/1.1\r\nHost:{}\r\nConnection:close\r\n\r\n".format(
+            path, host).encode("utf-8"))
+
+    # 接收数据
+    data = b""
+    while True:
+        c = client.recv(1024)  # 缓存
+        # 超出最大字节处理
+        if c:
+            data += c
+        else:
+            break
+
+    data = data.decode("utf8").split("\r\n\r\n")[1]  # 去除HTTP头部信息
+    # print(data)
+    client.close()
+
+
+if __name__ == "__main__":
+    stime = time.time()
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor()
+    tasks = []
+    for i in range(10):
+        url = "http://www.baidu.com"
+        task = loop.run_in_executor(executor, get_url, url)
+        tasks.append(task)
+    loop.run_until_complete(asyncio.wait(tasks))
+    print(time.time() - stime)  # 0.19601988792419434
+```
 ### asyncio模拟http请求
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: http_asyncio.py
+#CREATE_TIME: 2022-07-05
+#AUTHOR: Sancho
+"""
+ayncio实现http请求
+"""
+import time
+import asyncio
+import socket
+from urllib.parse import urlparse
+
+
+async def get_url(url):
+    # url解析
+    url = urlparse(url)
+    host = url.netloc  # 主域名解析
+    path = url.path
+    if path == "":
+        path = "/"
+
+    # 建立连接
+    # client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # client.connect((host, 80))  # 默认80端口
+    reader, writer = await asyncio.open_connection(host, 80)  # 协程建立连接（自动注册）
+    writer.write(
+        "GET {} HTTP/1.1\r\nHost:{}\r\nConnection:close\r\n\r\n".format(
+            path, host).encode("utf-8"))  # 发送HTTP请求
+    all_lines = []
+    async for raw_line in reader:  # 异步读取
+        data = raw_line.decode("utf8")  # 去除HTTP头部信息
+        all_lines.append(data)
+    html = "\n".join(all_lines)
+    # print(html)
+    return html
+
+
+async def main():
+    tasks = []
+    for i in range(10):
+        url = "http://www.baidu.com"
+        tasks.append(asyncio.ensure_future(get_url(url)))
+    for task in asyncio.as_completed(tasks): # 立即执行
+        result = await task
+        print(result)
+
+
+if __name__ == "__main__":
+    stime = time.time()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    print(time.time() - stime)  # 0.09278202056884766
+```
 ### future和task
 ### asyncio同步和通信
 ### aiohttp实现高并发爬虫
