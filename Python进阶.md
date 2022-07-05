@@ -1658,7 +1658,153 @@ if __name__ == "__main__":
 # final_result: {'键盘销量': (1200, [500, 400, 300]), '
 # 耳机销量': (1000, [300, 200, 500]), '鼠标销量': (1800, [500, 600, 700])}
 ```
-### 生成器如何变成协程
 ### async和await原生协程
+- Python3.5中加入async、await两个关键字，区分生成器和协程使用中的歧义
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: async_await.py
+#CREATE_TIME: 2022-07-05
+#AUTHOR: Sancho
+
+
+async def downloader(url):
+    return {"done": url}
+
+
+async def get_url(url):
+    html = await downloader(url) # await相当于yield
+    return html
+
+
+if __name__ == "__main__":
+    coro = get_url("http://www.baidu.com")
+    try:
+        coro.send(None)
+    except StopIteration as e:
+        print(e)
+```
+### 生成器如何变成协程
+- 生成器有状态：GEN_CREATED、GEN_SUSPENDED、GEN_CLOSED
+- 生成器可以返回值给调用方，调用方可以通过send返回值给子生成器
+- 解决同步的方式编写异步代码，并在适当时暂停或启动函数
+- 协程的调度依然是事件循环+协程模式，协程在单线程模式之中交由程序员调度
 ## 并发编程
+### 事件循环
+- asyncio包含各种特定系统实现的模块化事件循环；
+    - 传输和协议抽象；
+    - 对TCP、UDP、SSL、子进程、延时调用以及其它的具体支持；
+    - 模仿futures模块但适用于事件循环使用的Future类
+    - 基于yield from的协议和任务，可以用顺序的方式编写并发代码
+    - 必须使用一个将产生阻塞IO的调用时，有接口可以把这个事件转移到线程池
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: aysncio_loop.py
+#CREATE_TIME: 2022-07-05
+#AUTHOR: Sancho
+"""
+asyncio使用示例
+"""
+
+import asyncio
+import time
+from functools import partial
+
+
+async def get_html(url):
+    print("start get: ", url)
+    await asyncio.sleep(2)
+    print("end get: ", url)
+
+
+def callback(url, tasks):
+    """
+    结束时运行
+    url:需要传递的参数,需要放在参数列表前面
+    tasks:future参数,默认将task传递进来
+    """
+
+    print("done: ", url)
+
+
+if __name__ == "__main__":
+    stime = time.time()
+    loop = asyncio.get_event_loop()
+    # tasks = asyncio.ensure_future(get_html("http://www.baidu.com")) # 与下一行功能一致
+    tasks = loop.create_task(get_html("http://www.baidu.com"))
+    # tasks.add_done_callback(callback)
+    tasks.add_done_callback(partial(callback,
+                                    "http://www.baidu.com"))  # 结束时调用函数并传递参数
+    loop.run_until_complete(tasks)
+    print(time.time() - stime)  # 2.0029876232147217
+```
+### task取消和子协程调用
+```python
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+#FILE: asyncio_coroutine.py
+#CREATE_TIME: 2022-07-05
+#AUTHOR: Sancho
+"""
+asyncio的取消
+"""
+
+import asyncio
+import time
+
+
+async def get_html(sleep_times):
+    print("waiting")
+    await asyncio.sleep(sleep_times)
+    print("done after {}s".format(sleep_times))
+
+
+if __name__ == "__main__":
+    task1 = get_html(1)
+    task2 = get_html(2)
+    task3 = get_html(3)
+    tasks = [task1, task2, task3]
+    loop = asyncio.get_event_loop()
+
+    try:
+        loop.run_until_complete(asyncio.wait(tasks))
+    except KeyboardInterrupt as e:
+        all_tasks = asyncio.Task.all_tasks()  # 获取全部tasks
+        for task in all_tasks:
+            print("cancel task")
+            print(task.cancel())  # 取消task并返回取消结果
+        loop.stop()  # 停止事件循环
+        loop.run_forever()  # 必须再次启动
+    finally:
+        loop.close()  # 关闭事件循环
+```
+```python
+import asyncio
+""" 子协程调用 """
+
+
+async def compute(x, y):
+    print("Compute %s + %s ..." % (x, y))
+    await asyncio.sleep(1.0)
+    return x + y
+
+
+async def print_sum(x, y):
+    result = await compute(x, y)
+    print("%s + %s = %s" % (x, y, result))
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(print_sum(1, 2))
+loop.close()
+```
+![image](https://user-images.githubusercontent.com/42240228/177306667-8fe52865-40f9-45b3-8ae5-72eae2d99d21.png)
+### call_soon、call_later、call_at、call_soon_threadsafe
+
+### ThreadPoolExector + asyncio
+### asyncio模拟http请求
+### future和task
+### asyncio同步和通信
+### aiohttp实现高并发爬虫
 
