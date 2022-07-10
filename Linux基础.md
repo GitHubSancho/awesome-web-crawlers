@@ -311,7 +311,60 @@
  - 以树状显示目录结构：`tree [dir]`
    - 可能需要：`yun install tree`安装tree命令
 ### 网络配置
+- 网络环境配置
+  - `ipconfig`：查看网络地址
+  - `ping [add]`：测试连接通畅性
+  - 设置指定ip：`vi /etc/sysconfig/network-scripts/ifcfg-ens33`
+    - `ifcfg-ens33`文件说明：
+      - `DEVICE=eth10`：接口名（设备、网卡）
+      - `HWADDR=00:0C:2x:6x:0x:xx`：MAC地址
+      - `TYPE=Ethernet`：网络类型，通常是Ethernet
+      - `UUID=9031ad3-dsaalj21`：随机ID
+      - `ONBOOT=yes`：系统启动时网络接口是否有效
+      - `BOOTPROTO=static`：IP的配置方法[none|staic|bootp|dhcp]（引导时不使用协议|静态分配IP|BOOTP协议|DHCP协议）
+      - `IPADDR=192.168.200.130`：IP地址
+      - `GATEWAY=APADDR=192.168.200.2`：网关
+      - `DNS1=192.168.200.2`：域名解析器
+  - 重启网络服务:`service network restart`
+- 设置主机名和hosts映射
+  - 查看主机名：`hostname`
+  - 修改主机名：`vim etc/hostname`，修改保存后重启
 ### 进程管理
+- 显示系统执行的进程
+ - `ps [选项]`：显示进程。
+   - `-a` ：显示当前终端的所有进程消息
+   - `-u` ：以用户的格式显示进程信息
+   - `-x` ：显示后台进程运行的参数
+   - `-e` ：显示所有进程
+   - `-f` ：全格式
+ - 进程详细参数
+   - UID：用户ID
+   - PID：进程识别号
+   - PPID：父进程ID
+   - C：优先级因子，数值越大CPU运算越密集，执行优先级越低；数值越小I/O运算越密集，执行优先级越高
+   - %CPU：占CPU百分比
+   - %MEN：占用物理内存百分比
+   - VSZ：虚拟内存大小
+   - RSS：物理内存大小
+   - TTY：终端机号
+   - STAT：状态（S=sleep，N=低优先级，R=running，D=等待，Z=僵死，T=被跟踪或停止等）
+   - STARTED：进程启动时间
+   - TIME：占用CPU时间
+   - COMMAND正在执行的命令或进程
+ - 终止进程
+   - `kill [选项] [pid]`：通过pid终止进程
+     - `-9`：强制终止
+   - `killall [进程名]`：通过进程名终止进程及其子进程，支持通配符
+     - `-9`：强制终止
+- 查看进程树
+  - `pstree [选项]`:查看树状进程信息
+    - `-p`：显示进程的PID
+    - `-u`：显示进程的所属用户
+- 服务管理
+  - `service [服务名] [start|stop|restart|reload|status]`：启动服务
+    - Centos7.0后很多服务不再使用service而是systemctl
+    - service指令管理的服务在/etc/init.d查看
+  - 使用`setup`命令→系统服务，可以查看全部服务或`ls -l /etc/init.d`
 ### RPM和YUM
 
 
