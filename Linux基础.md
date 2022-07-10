@@ -365,6 +365,26 @@
     - Centos7.0后很多服务不再使用service而是systemctl
     - service指令管理的服务在/etc/init.d查看
   - 使用`setup`命令→系统服务，可以查看全部服务或`ls -l /etc/init.d`
+  - `chkconfig [选项] [服务名] [on|off]`:给服务的各个运行级别设置自启动|关闭,需要重启
+    - `--list`：以列表显示
+    - `--level [5]`：只查看level [num]的运行级别
+  - `systemctl [选项] [start|stop|restart|status] [服务名]`
+    - systemctl管理的服务在/usr/lib/systemd/system查看
+    - `list-unit-file`：查看服务关机启动状态
+    - `enable`：设置服务开机启动
+    - `disable`：关闭服务开机启动
+    - `is-enabled`：查询某个服务是否是自启动
+  - firewall指令
+    - 打开端口：`firewall-cmd -- permanent --add-port=[端口号/协议]`
+    - 关闭端口：`firewall-cmd -- permanent --remove-port=[端口号/协议]`
+    - 重新载入：`firewall-cmd --reload`
+    - 查询端口：`firewall-cmd --query-port=[端口号/协议]`
+- 动态监控进程
+  - `top [选项]`：动态显示正在执行的进程
+    - `-d [秒数]`：指定多少秒更新，默认3秒
+    - `-i`：不显示闲置或僵死进程
+    - `-p`：通过监控进程ID来仅仅监控某个进程的状态
+  
 ### RPM和YUM
 
 
