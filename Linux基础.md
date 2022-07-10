@@ -384,7 +384,48 @@
     - `-d [秒数]`：指定多少秒更新，默认3秒
     - `-i`：不显示闲置或僵死进程
     - `-p`：通过监控进程ID来仅仅监控某个进程的状态
-  
+  - 交互操作：
+    - `P`：以CPU使用率排序（默认）
+    - `M`：以内存使用率排序
+    - `N`：以PID排序
+    - `q`：退出top
+    - `u [user]`：跟踪用户进程
+    - `k [pid]`：终止指定进程
+- 监控网络状态
+  - `netstat [选项]`：查看系统网络状况
+    - `-an`:按一定顺序排列输出
+    - `-p`：显示哪个进程在调用
 ### RPM和YUM
-
-
+- `rpm [选项]`
+  - `-qa`：查询所有已安装程序
+  - `-q [appName]`:查询app是否安装
+  - `-qi`：查询软件包信息
+  - `-ql`：查询软件包文件
+  - `-qf [dir]`：查询文件所属软件包
+  - `-e [appName]`：卸载rpm包
+    - `-e --nodeps [appName]`：强制卸载
+  - `-ivh [dir]`：安装RPM包，i=安装，v=提示，h=进度条
+- `yum [选项] [appName]`：基于RPM，自动下载且自动下载依赖
+  - `list`：查看所有可安装的包
+  - `install [appName]`：下载指定包
+### !shell编程
+### Python相关
+- 下载ubuntu
+  - [官网下载](https://cn.ubuntu.com/download)
+  - !中文支持
+  - 新机注意需要先`sudo passwd`设置root初始密码
+- APT软件管理
+  - 常用命令：
+    - `sudo apt-get update`：更新源
+    - `sudo apt-get install [appName]`：安装包
+    - `sudo apt-get remove [appName]`：卸载包
+    - `sudo apt-cache show [appName]`：获取包相关信息
+    - `sudo apt-get source [appName]`：下载该包源代码
+  - 镜像源：
+    - apt地址：/etc/apt/sources.list
+    - 清华大学镜像地址：进入[官网](https://mirrors.tuna.tsinghua.edu.cn/)，选择系统和版本号，复制内容，备份源地址`sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup`,粘贴到文件
+- 远程登录
+  - 安装SSH服务：`sudo apt-get install openssh-server`
+  - 启用ssh服务：`service sshd restart`
+  - 连接另一台linux：`ssh [user]@[ip]`
+    - 退出命令:`exit`或`logout`
