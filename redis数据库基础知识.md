@@ -126,9 +126,52 @@
     - `zrem [key] [member]`：删除指定元素，支持多元素删除
     - `zremrangebyscore [key] [min] [max]`：删除权重在指定范围的元素
 ## 与Python交互
+- 安装包：`pip install redis`
+- 导入模块：`from redis import *`
+- 创建对象：`sr = StrictRedis()`，host默认为"localhost"，port默认为6379，db默认为0
+```python
+from redis import *
+
+if __name__ == "__main__":
+  # 创建StrictRedis对象，连接Redis数据库
+  try:
+    sr = StrictRedis()
+    # 添加或修改一对键值，返回状态
+    res = sr.set('name','Sancho')
+    print(res) # True
+    
+    # 获取值
+    res = sr.get('name')
+    print(res) # b"Sancho"
+    
+    # 删除键值
+    res = sr.delete("name")
+    print(res) # 1
+    
+    # 获取所有键
+    res = sr.keys()
+    print(res)
+    
+  except Exception as e:
+    print(e)
+  
+```
 
 ## 搭建主从
-
+1. 修改redis.conf文件
+  - `sudo vi /etc/redis/redis.conf`
+  - 修改`bind [ip]`绑定本机ip地址
+  - 重启redis服务：`sudo service redis stop`，`sudo redis-server /etc/redis/redis.conf`
+2. 配置从  
+  - 复制redis.conf文件：`sudo cp /etc/redis/redis.conf /etc/redis/slave.conf`
+  - 修改slave.conf文件：`sudo vi /etc/redis/slave.conf`
+  - 编辑内容：`bind`修改为本机ip地址，`port`修改为与主机不冲突的端口，添加`slaveof [主机ip] [主机端口]`
+  - 启动从数据库：`sudo redis-server /etc/redis/slave.conf`
 ## 搭建集群
-
-[redis命令参考文档](http://doc.redisfans.com/)
+  - 查看主从关系：`redis-cli -h [ip地址] -p [端口] info Replication`
+- 数据操作
+  - 主数据库修改后会备份到从数据库
+  - 从数据库连接后可以读数据，不可以写
+  
+----
+*[redis命令参考文档](http://doc.redisfans.com/)*
