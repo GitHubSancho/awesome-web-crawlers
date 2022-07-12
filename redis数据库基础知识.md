@@ -157,7 +157,7 @@ if __name__ == "__main__":
   
 ```
 
-## 搭建主从
+## 配置主从
 1. 修改redis.conf文件
   - `sudo vi /etc/redis/redis.conf`
   - 修改`bind [ip]`绑定本机ip地址
@@ -172,6 +172,75 @@ if __name__ == "__main__":
 - 数据操作
   - 主数据库修改后会备份到从数据库
   - 从数据库连接后可以读数据，不可以写
-  
+
+## 配置集群
+- 机器1
+  1. 进入Desktop目录（随意），创建conf目录
+  2. conf目录下创建文件7000.conf（随意），编辑内容如下：
+  ```
+port 7000
+bind [ip]
+deamonize yes
+pidfile 7000.pid
+cluster-enabled yes
+cluster-node-config-file 7000_node.conf
+cluster-node-timeout 15000
+appendonly yes
+  ```
+    - deamonize yes：后台运行
+    - pidfile 7000.pid：进程PID
+    - cluster-enabled yes：作为集群节点
+    - cluster-node-config-file 7000_node.conf：节点配置文件
+    - cluster-node-timeout 15000：集群节点连接超时时间
+    - appendonly yes：数据文件追加
+  3. conf目录下创建7001.conf，编辑内容如下：
+  ```
+port 7001
+bind [本机ip]
+deamonize yes
+pidfile 7001.pid
+cluster-enabled yes
+cluster-node-config-file 7000_node.conf
+cluster-node-timeout 15000
+appendonly yes
+  ```
+  4. 需要在本机启动多少个就可以依次新建多少个文件
+  5. `sudo redis-server 7000.conf`：依次启动所有服务，7000.conf、7001.conf...
+- 机器2
+  - 如上创建目录和文件，依次7010.conf、7011.conf...，并启动所有服务
+- 创建集群
+  1. 所有文件配置好后，拷贝包：`sudo cp /usr/share/doc/redis-tools/examples/redis-trib.rb /usr/local/bin/`
+  2. 安装ruby：`sudo apt-get install ruby`，使用国内源：`gem sources --add https://gems.ruby-china.org --remove https://rubygems.org/`，安装依赖：`sudo gem install redis`
+  3. 使用命令创建集群：`redis-trib.rb create --relicas 1 [本机ip]:[端口1] [本机ip]:[端口2] [外部ip]:[端口3]...`依次创建所有集群
+  - 注意：必须要有3个或以上主节点，且存活的主节点数量小于总节点数量的一半时无法提供服务
+- 连接集群
+  - `redis-cli -h [ip] -c -p [端口]`：连接任何节点均可，主节点可以写数据（redis采用槽的方式分配节点存放数据）
+
+## Python交互集群
+- 安装包：`pip install redis-py-cluster`
+- 创建py文件，示例代码：
+```python
+from rediscluster import *
+
+if __name__ == "__main__":
+  try:
+    # 构建所有主节点
+    startup_nodes = [
+      {'host':'192.168.x.x','port':'xxxx'},
+      {'host':'192.168.x.x','port':'xxxx'},
+      {'host':'192.168.x.x','port':'xxxx'}
+    ]
+    # 构建StrictRedisCluster对象，连接集群
+    src = StrictRedisCluster(startup_nodes=startup_nodes,decode_responses=True)
+    # 设置键值
+    result = src.set('name','Sancho')
+    print(result) # True
+    # 获取键
+    name = src.get('name')
+    print(name) # Sancho
+  except Exception as e:
+    print(e)
+```
 ----
 *[redis命令参考文档](http://doc.redisfans.com/)*
+*[redis集群搭建](http://www.cnblogs.com/wuxl360/p/5920330.html)*
