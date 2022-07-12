@@ -177,7 +177,7 @@ if __name__ == "__main__":
 - 机器1
   1. 进入Desktop目录（随意），创建conf目录
   2. conf目录下创建文件7000.conf（随意），编辑内容如下：
-  ```
+```
 port 7000
 bind [ip]
 deamonize yes
@@ -186,7 +186,7 @@ cluster-enabled yes
 cluster-node-config-file 7000_node.conf
 cluster-node-timeout 15000
 appendonly yes
-  ```
+```
     - deamonize yes：后台运行
     - pidfile 7000.pid：进程PID
     - cluster-enabled yes：作为集群节点
@@ -194,7 +194,7 @@ appendonly yes
     - cluster-node-timeout 15000：集群节点连接超时时间
     - appendonly yes：数据文件追加
   3. conf目录下创建7001.conf，编辑内容如下：
-  ```
+```
 port 7001
 bind [本机ip]
 deamonize yes
@@ -203,7 +203,7 @@ cluster-enabled yes
 cluster-node-config-file 7000_node.conf
 cluster-node-timeout 15000
 appendonly yes
-  ```
+```
   4. 需要在本机启动多少个就可以依次新建多少个文件
   5. `sudo redis-server 7000.conf`：依次启动所有服务，7000.conf、7001.conf...
 - 机器2
@@ -241,6 +241,7 @@ if __name__ == "__main__":
   except Exception as e:
     print(e)
 ```
+
 ----
 *[redis中文文档](http://www.redis.cn/documentation.html)*  
 *[redis命令参考文档](http://doc.redisfans.com/)*  
