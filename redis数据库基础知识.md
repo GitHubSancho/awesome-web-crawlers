@@ -242,5 +242,7 @@ if __name__ == "__main__":
     print(e)
 ```
 ----
-*[redis命令参考文档](http://doc.redisfans.com/)*
-*[redis集群搭建](http://www.cnblogs.com/wuxl360/p/5920330.html)*
+*[redis中文文档](http://www.redis.cn/documentation.html)*  
+*[redis命令参考文档](http://doc.redisfans.com/)*  
+*[redis集群搭建](http://www.cnblogs.com/wuxl360/p/5920330.html)*  
+*[更多教程](https://www.runoob.com/redis/redis-tutorial.html)*  
