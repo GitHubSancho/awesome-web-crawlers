@@ -61,9 +61,74 @@
   - 进入后测试连接：`ping`
   - 切换数据库：`select [num]`，默认0~15号
 ## 数据操作
-
+- String类型
+  - 字符串，二进制安全，可接受任何格式，Value最多容纳512M
+  - 设置键值
+    - `set [key] [value]`：key不存在是创建，存在则修改
+    - `setex [key] [seconds] [value]`：设置过期时间
+    - `mset [key1] [value1] [key2] [value2]`：设置多个键值
+    - `append [key] [value]`：追加值
+  - 获取键值
+    - `get key`：获取键值，不存在返回nil
+    - `mget [key1] [key2]`：获取多个键值
+- 键命令
+  - `keys [pattern]`：查找键，支持正则
+    - `keys *`：查找所有键
+  - `exists [key]`：判断键是否存在，存在返回1，不存在返回0
+  - `type [key]`：查看value的数据类型
+  - `del [key]`：删除键，支持多键值删除
+  - `expire [key] [seconds]`：设置键值过期时间
+  - `ttl [key]`：查看键值有效时间
+- Hash类型
+  - 哈希类型存储，结构为属性、值，值类型为String
+  - 设置键值
+    - `hset [key] [filed] [value]`：设置单个属性
+    - `config set stop-writes-on-bgsave-error no`：关闭配置项解决不能持久化的报错
+    - `hmset [key] [field1] [value1] [field2] [value2]`：设置多个属性
+  - 获取键值
+    - `hkeys [key]`：获取指定键的属性
+    - `hget [key] [field]`：获取属性的值
+    - `hmget [key] [field1] [field2]`：获取多个属性的值
+    - `hvals [key]`：获取所有属性的值
+  - 删除
+    - `hdel [key] [field]`：删除指定的属性和对应的值，支持多个属性删除
+- list类型
+  - 列表元素的类型为string，按照插入顺序排序
+  - 设置键值
+    - `lpush [key] [value]`：从左侧插入数据，支持多元素值
+    - `rpush [key] [value]`：从右侧插入数据，支持多元素值
+    - `linsert [key] [before|after] [value1] [value2]`：从key列表中value1的前或后插入value2的元素值
+    - `lset [key] [index] [value]`：设置指定索引位置的元素值，索引从0开始，负数索引为尾部计数
+  - 获取键值
+    - `lrange [key] [start] [stop]`：返回列表切片范围类的指定元素
+  - 删除
+    - `lrem [key] [count] [value]`：移除键中指定数量的元素
+      - count > 0：从前往后移除
+      - count < 0：从后往前移除
+      - count = 0：移除所有
+- set类型
+  - 无序集合，元素为string类型，元素唯一性不重复，不能修改
+  - 设置键值
+    - `sadd [key] [member]`：添加元素，支持多个元素
+  - 获取键值
+    - `smembers [key]`：查看该集合的所有元素
+  - 删除键值
+    - `srem [key] [member]`：删除集合内指定元素
+- zset类型
+  - 有序集合，元素为string类型，元素唯一性不重复，每个元素关联一个double类型的score权重，通过权重从小到大排序，不能修改
+  - 设置键值
+    - `zadd [key] [score] [member]`：设置有序集合，支持多个元素，每个元素都需要一个socre权重
+  - 获取键值
+    - `zrange [key] [start] [stop]`：获取指定切片内的元素
+    - `zrangebysocre [key] [min] [max]`：根据socre值的区间（包括mix和max）获取元素
+    - `zscore [key] [member]`：获取元素的score值
+  - 删除键值
+    - `zrem [key] [member]`：删除指定元素，支持多元素删除
+    - `zremrangebyscore [key] [min] [max]`：删除权重在指定范围的元素
 ## 与Python交互
 
 ## 搭建主从
 
 ## 搭建集群
+
+[redis命令参考文档](http://doc.redisfans.com/)
