@@ -4,7 +4,8 @@
   - **大数据量，高性能**：非常高的读写性能，尤其是大数据量下表现优秀
   - **灵活的数据模型**：无需事先为要存储的数据建立字段，随时可以存储自定义的数据格式
 ## 安装和启动
-- linux([参考](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/))：
+- linux([参考下载](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/))：
+- ubuntu([参考下载](https://blog.csdn.net/Dwj1212/article/details/123451532))
   1. `sudo apt-get install -y mongodb-org`
   2. 解压：`tar -zxvf mongodb-linux-x86_64-ubuntu1604-3.4.0.tgz`
   3. 移动到/usr/local/目录：`sudo mv -r mongodb-linux-x86_64-ubuntu1604-3.4.0.tgz /usr/local/mongodb`
