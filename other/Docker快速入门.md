@@ -50,7 +50,7 @@ Azure 中国镜像	https://dockerhub.azk8s.cn
     - `-i`：保持运行
     - `-t`：分配终端
     - `-d`：后台运行
-- 进入容器:`docker exec --it [containerName] [可选初始化指令，如：/bin/bash]`
+- 进入容器:`docker exec -it [containerName] [可选初始化指令，如：/bin/bash]`
 - 退出容器：`exit`
 - 启动容器：`docker start [containerName]`
 - 停止容器：`docker stop [containerName]`
@@ -92,7 +92,7 @@ docker run -id \
 - 拉取镜像：`docker pull redis:5.0`
 - 创建容器：`docker run -id --name [containerName] -p 6379:6379 redis:5.0`
 - 访问验证：`.\redis-cli.exe -h [host] -p 6379`
-```
+
 ## 制作Docker镜像
 ### Docker镜像原理
 - Docker镜像是由特殊的文件系统叠加而成
@@ -130,9 +130,9 @@ docker run -id \
     3. 运行`docker-compse up`启动应用
 ### Docker Compose使用
 - 安装Dcoker Compose
-    - 下载：`curl -L https://hub.fastgit.xyz/docker/compose/releases/download/v2.10.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose`
+    - 下载：`curl -L https://hub.0z.gs/docker/compose/releases/download/v2.10.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose`
     - 设置文件可执行权限：`chmod +x /usr/local/bin/docker-compose`
-    - 查看版本信息：`docker-compose -version`
+    - 查看版本信息：`docker-compose --version`
 - 编排
     - 创建目录：`mkdir docker-compose && cd docker-compose/`
     - 写配置：`vim docker-compose.yml`

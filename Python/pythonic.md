@@ -1,0 +1,12 @@
+# Pythonic
+## Pythonic简介
+## Pythonic数据结构
+## class与OPP约定
+## Python模块与元编程
+## Decorator与Context管理
+## 正确的数据处理过程
+## Iterators,Generators,Coroutines
+## Pythonic的设计与架构
+## Python的Descriptors
+## 有效的测试Python代码
+## 生产环境的代码管理
